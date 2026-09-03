@@ -6,7 +6,7 @@ An interactive HR KPI dashboard, styled as a Power BI-style report, backed by a 
 
 `SQL` · `Excel (Power Query, VBA)` · `JavaScript / SVG`
 
-> Note: Meridian Retail Group is a fictional company. Every figure in this project is synthetically generated (Python/pandas/Faker) to demonstrate the workflow end to end — no real employee data is used. See [`data/`](data) for how it was generated.
+> Note: Meridian Retail Group is a fictional company. Every figure in this project is synthetically generated (Python/pandas/Faker) to demonstrate the workflow end to end — no real employee data is used. See [`DATA/`](DATA) for how it was generated.
 
 ---
 
@@ -29,11 +29,11 @@ Meridian's People team tracked headcount, attrition, engagement, and training co
 
 ## Approach
 
-**Data cleaning — SQL + Power Query.** Monthly HRIS exports arrive messy: inconsistent department names, missing training hours, duplicate rows. `excel/HR_Performance_KPI_Workbook.xlsx` documents a repeatable Power Query cleaning pass (trim/normalize text, enforce data types, remove duplicates, fill gaps from department-month medians) — its `Raw_Export_Sample` sheet shows the "before" state next to the cleaned tables.
+**Data cleaning — SQL + Power Query.** Monthly HRIS exports arrive messy: inconsistent department names, missing training hours, duplicate rows. `EXCEL/HR_Performance_KPI_Workbook.xlsx` documents a repeatable Power Query cleaning pass (trim/normalize text, enforce data types, remove duplicates, fill gaps from department-month medians) — its `Raw_Export_Sample` sheet shows the "before" state next to the cleaned tables.
 
 **KPI modeling — SQL.** [`sql/hr_kpi_queries.sql`](sql/hr_kpi_queries.sql) computes headcount and attrition trend, attrition variance by department and month, training completion rate, absenteeism by location, a department scorecard, and a set of data-quality checks that validate the cleaning step.
 
-**Reporting automation — Excel VBA.** [`excel/ReportAutomation.bas`](excel/ReportAutomation.bas) is a macro (`RunMonthlyReport`) that refreshes every Power Query connection and pivot table, re-exports the report to PDF, and emails the distribution list — cutting the in-Excel portion of monthly report prep from roughly 50 minutes to 5.
+**Reporting automation — Excel VBA.** [`EXCEL/ReportAutomation.bas`](EXCEL/ReportAutomation.bas) is a macro (`RunMonthlyReport`) that refreshes every Power Query connection and pivot table, re-exports the report to PDF, and emails the distribution list — cutting the in-Excel portion of monthly report prep from roughly 50 minutes to 5.
 
 **Dashboard.** [`index.html`](index.html) is a single self-contained interactive report: KPI tiles with trend sparklines, department and date-range filters, paginated trend charts (attrition/absenteeism, engagement/training/productivity), a department productivity comparison, a separations breakdown, and a full scorecard table — built in vanilla JS/SVG, no framework or build step.
 
@@ -64,10 +64,10 @@ Full write-up: [`case_study.md`](case_study.md)
 │   └── chart_pattern_view.png
 ├── sql/
 │   └── hr_kpi_queries.sql            # KPI + data-quality queries
-├── excel/
+├── EXCEL/
 │   ├── HR_Performance_KPI_Workbook.xlsx   # raw→cleaned data, data dictionary, pivot source
 │   └── ReportAutomation.bas          # VBA macro: refresh, export, email
-└── data/
+└── DATA/
     └── meridian_hr_csv_tables.zip    # dim/fact CSVs — import straight into Power BI Desktop
 ```
 
