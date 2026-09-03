@@ -2,7 +2,7 @@
 
 An interactive HR KPI dashboard, styled as a Power BI-style report, backed by a documented SQL + Excel/Power Query data pipeline and a VBA reporting-automation macro.
 
-**[View the live dashboard →](#)** *(replace `#` with your GitHub Pages URL once enabled — see [Publishing the live demo](#publishing-the-live-demo) below)*
+   **[View the live dashboard →](https://jjgohildev.github.io/HR-Performance-KPI-dashboard/)**
 
 `SQL` · `Excel (Power Query, VBA)` · `JavaScript / SVG`
 
