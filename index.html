@@ -1,0 +1,823 @@
+<title>Meridian Workforce Pulse</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap">
+<style>
+  .viz-root{
+    /* ---- committed light theme: this is meant to read as real POS/BI terminal
+       software, which runs on bright shop-floor displays, not a dark IDE ---- */
+    --page:#eef1f7; --surface-1:#ffffff; --surface-2:#f4f6fb; --surface-hover:#eaeefa;
+    --text-primary:#12172b; --text-secondary:#576079; --text-muted:#7a8299;
+    --grid:#e6e9f2; --baseline:#c7cee0; --border:rgba(18,23,43,0.08);
+    --shadow-sm: 0 1px 2px rgba(18,23,43,.05);
+    --shadow-md: 0 14px 28px -18px rgba(18,23,43,.28);
+    --rail-bg:#12172b; --rail-icon:#8891ac; --rail-icon-active:#ffffff; --rail-active-bg:#232a44;
+
+    --s-blue:#2a78d6; --s-orange:#eb6834; --s-aqua:#1baf7a; --s-yellow:#c98200;
+    --s-magenta:#d2588a; --s-green:#1a7a1a; --s-violet:#4a3aa7; --s-red:#d5433f;
+    --good:#0c8f2f; --good-bg:rgba(12,143,47,.11);
+    --critical:#c93327; --critical-bg:rgba(201,51,39,.10);
+    --flat-bg:rgba(87,96,121,.08);
+
+    color-scheme: light;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  .viz-root *{ box-sizing: border-box; }
+  .viz-root .num{ font-variant-numeric: proportional-nums; }
+  .viz-root .tabular{ font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; }
+  .viz-root .data-font{ font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .viz-root svg.icon{ display:block; flex:none; }
+
+  /* ---------- shell: icon rail + main ---------- */
+  .app-shell{ display:flex; align-items:stretch; min-height:100vh; }
+  .icon-rail{ width:64px; flex:none; background:var(--rail-bg); display:flex; flex-direction:column;
+    align-items:center; gap:6px; padding:18px 0; position:sticky; top:0; align-self:flex-start; height:100vh; }
+  .rail-brand{ width:34px; height:34px; border-radius:9px; background:linear-gradient(160deg,var(--s-blue),#1c4f96);
+    display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:12px; margin-bottom:14px; flex:none; }
+  .rail-btn{ width:40px; height:40px; border-radius:10px; border:none; background:transparent; color:var(--rail-icon);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .12s, color .12s; }
+  .rail-btn:hover{ background:var(--rail-active-bg); color:var(--rail-icon-active); }
+  .rail-btn.active{ background:var(--rail-active-bg); color:var(--rail-icon-active); }
+  .rail-btn:focus-visible{ outline:2px solid var(--s-blue); outline-offset:2px; }
+  .rail-spacer{ flex:1; }
+  .rail-foot{ font-size:9px; color:#4b5372; writing-mode:vertical-rl; text-transform:uppercase; letter-spacing:.12em; padding-bottom:6px; }
+
+  .app-main{ flex:1; min-width:0; padding:26px 30px 56px; }
+
+  /* ---------- header ---------- */
+  .dash-header{ display:flex; align-items:flex-start; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:20px; }
+  .dash-title-block{ display:flex; flex-direction:column; gap:5px; }
+  .brand-row{ display:flex; align-items:center; gap:8px; }
+  .brand-name{ font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); }
+  .dash-title{ font-size:25px; font-weight:800; letter-spacing:-.01em; margin:1px 0 0; text-wrap:balance; }
+  .dash-sub{ font-size:13px; color:var(--text-secondary); margin:0; }
+  .tool-tags{ display:flex; gap:6px; margin-top:9px; flex-wrap:wrap; }
+  .tool-tag{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border); }
+
+  .filters{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .filter-select{ background:var(--surface-1); border:1px solid var(--border); color:var(--text-primary);
+    font-size:13px; font-weight:600; padding:9px 12px; border-radius:10px; font-family:inherit; cursor:pointer; box-shadow:var(--shadow-sm); }
+  .filter-select:focus-visible{ outline:2px solid var(--s-blue); outline-offset:1px; }
+
+  /* ---------- stat tiles ---------- */
+  .tile-row{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; margin-bottom:18px; }
+  @media (max-width: 1080px){ .tile-row{ grid-template-columns:repeat(2,1fr); } }
+  .tile{ background:var(--surface-1); border:1px solid var(--border); border-radius:16px; padding:16px 16px 14px;
+    display:flex; flex-direction:column; gap:9px; box-shadow:var(--shadow-sm); }
+  .tile-top{ display:flex; align-items:center; gap:9px; }
+  .tile-chip{ width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex:none; color:#fff; }
+  .tile-label{ font-size:12px; font-weight:700; color:var(--text-secondary); }
+  .tile-value{ font-size:27px; font-weight:800; letter-spacing:-.01em; }
+  .tile-delta{ font-size:11.5px; font-weight:700; display:inline-flex; align-items:center; gap:4px; padding:3px 8px 3px 6px; border-radius:999px; width:fit-content; }
+  .tile-delta svg{ width:11px; height:11px; }
+  .tile-delta.good{ color:var(--good); background:var(--good-bg); }
+  .tile-delta.bad{ color:var(--critical); background:var(--critical-bg); }
+  .tile-delta.flat{ color:var(--text-muted); background:var(--flat-bg); }
+  .tile-spark{ margin-top:1px; }
+
+  /* ---------- section headings ---------- */
+  .section-heading{ font-size:11.5px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:var(--text-muted);
+    margin:26px 2px 10px; scroll-margin-top:20px; }
+  .section-heading:first-of-type{ margin-top:4px; }
+
+  /* ---------- cards / charts ---------- */
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .grid-split{ display:grid; grid-template-columns:1.15fr 0.85fr; gap:14px; }
+  @media (max-width: 980px){ .grid-2, .grid-split{ grid-template-columns:1fr; } }
+  .card{ background:var(--surface-1); border:1px solid var(--border); border-radius:16px; padding:18px 18px 16px; box-shadow:var(--shadow-sm), var(--shadow-md); }
+  .card-head{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:12px; gap:10px; }
+  .card-title-row{ display:flex; align-items:center; gap:8px; }
+  .card-title{ font-size:14.5px; font-weight:800; letter-spacing:-.005em; }
+  .card-note{ font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+  .card-controls{ display:flex; align-items:center; gap:4px; flex:none; }
+  .icon-btn{ width:28px; height:28px; border-radius:8px; border:1px solid var(--border); background:var(--surface-1);
+    color:var(--text-secondary); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; }
+  .icon-btn:hover{ background:var(--surface-hover); color:var(--text-primary); }
+  .icon-btn:focus-visible{ outline:2px solid var(--s-blue); outline-offset:1px; }
+  .icon-btn.active{ background:var(--s-blue); border-color:var(--s-blue); color:#fff; }
+  .icon-btn svg{ width:14px; height:14px; }
+  .page-dots{ font-size:10.5px; font-weight:700; color:var(--text-muted); padding:0 4px; min-width:24px; text-align:center; }
+
+  svg{ overflow:visible; display:block; }
+  .axis-label{ font-size:10px; fill:var(--text-muted); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .grid-line{ stroke:var(--grid); stroke-width:1; }
+  .baseline{ stroke:var(--baseline); stroke-width:1; }
+  .annotation-line{ stroke:#aab2cc; stroke-width:1.2; stroke-dasharray:3 3; }
+  .annotation-label{ font-size:10px; fill:var(--text-secondary); font-weight:700; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .chart-tooltip{ position:absolute; pointer-events:none; background:#12172b; border:1px solid rgba(255,255,255,.08);
+    border-radius:9px; padding:8px 11px; font-size:11.5px; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; color:#fff;
+    box-shadow:0 10px 24px rgba(18,23,43,.28); opacity:0; transition:opacity .1s; z-index:5; white-space:nowrap; }
+  .chart-tooltip strong{ color:#fff; }
+  .chart-wrap{ position:relative; }
+
+  .legend-row{ display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; color:var(--text-secondary); }
+  .legend-swatch{ width:10px; height:10px; border-radius:3px; flex:none; }
+
+  .hidden-table{ display:none; margin-top:10px; }
+  .hidden-table.show{ display:block; }
+  .data-table{ width:100%; border-collapse:collapse; font-size:12.5px; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .data-table th{ text-align:left; color:var(--text-muted); font-weight:700; padding:7px 9px; border-bottom:1.5px solid var(--border); font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; }
+  .data-table td{ padding:7px 9px; border-bottom:1px solid var(--grid); color:var(--text-secondary); }
+  .data-table tbody tr:hover td{ background:var(--surface-2); }
+  .data-table td.strong{ color:var(--text-primary); font-weight:700; }
+  .data-table tr.hl td{ background:rgba(42,120,214,.07); }
+  .dept-swatch{ display:inline-block; width:8px; height:8px; border-radius:2px; margin-right:7px; }
+
+  .footer-note{ font-size:11.5px; color:var(--text-muted); text-align:center; margin-top:28px; line-height:1.7; }
+
+  /* ---------- expand modal ---------- */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(15,19,36,.55); backdrop-filter:blur(2px);
+    display:flex; align-items:center; justify-content:center; z-index:50; padding:24px; }
+  .modal-overlay[hidden]{ display:none; }
+  .modal-card{ background:var(--surface-1); border-radius:18px; padding:22px 24px 20px; max-width:760px; width:100%;
+    max-height:88vh; overflow-y:auto; box-shadow:0 30px 60px -20px rgba(15,19,36,.45); }
+  .modal-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:14px; }
+  .modal-title{ font-size:17px; font-weight:800; }
+  .modal-note{ font-size:12px; color:var(--text-muted); margin-top:2px; }
+</style>
+
+<div class="viz-root" id="viz-root">
+  <div class="app-shell">
+    <nav class="icon-rail" aria-label="Dashboard sections">
+      <div class="rail-brand">MR</div>
+      <button class="rail-btn" data-scroll="top" title="Overview" aria-label="Scroll to overview"></button>
+      <button class="rail-btn" data-scroll="trends" title="Trends" aria-label="Scroll to trends"></button>
+      <button class="rail-btn" data-scroll="departments" title="Departments" aria-label="Scroll to departments"></button>
+      <button class="rail-btn" data-scroll="scorecard" title="Scorecard" aria-label="Scroll to scorecard"></button>
+      <div class="rail-spacer"></div>
+      <div class="rail-foot">MERIDIAN</div>
+    </nav>
+
+    <div class="app-main">
+      <div class="dash-header">
+        <div class="dash-title-block">
+          <div class="brand-row">
+            <div class="brand-name">Meridian Retail Group &middot; People Analytics</div>
+          </div>
+          <div class="dash-title">Workforce Pulse</div>
+          <div class="dash-sub" id="periodSub">Jan 2024 &ndash; Aug 2026 &middot; refreshed automatically on the 1st of each month</div>
+          <div class="tool-tags">
+            <span class="tool-tag">Power BI-style report</span>
+            <span class="tool-tag">SQL</span>
+            <span class="tool-tag">Excel + Power Query</span>
+          </div>
+        </div>
+        <div class="filters">
+          <select class="filter-select" id="deptFilter" aria-label="Filter by department"></select>
+          <select class="filter-select" id="rangeFilter" aria-label="Filter by date range">
+            <option value="32">Full period (32 mo)</option>
+            <option value="12" selected>Last 12 months</option>
+            <option value="6">Last 6 months</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tile-row" id="tileRow"></div>
+
+      <div class="section-heading" id="trends">Trends</div>
+      <div class="grid-2">
+        <div class="card" id="cardA">
+          <div class="card-head">
+            <div>
+              <div class="card-title-row"><span class="card-title" id="cardA_title"></span></div>
+              <div class="card-note" id="cardA_note"></div>
+            </div>
+            <div class="card-controls">
+              <button class="icon-btn" id="cardA_prev" title="Previous metric" aria-label="Previous metric"></button>
+              <span class="page-dots" id="cardA_page"></span>
+              <button class="icon-btn" id="cardA_next" title="Next metric" aria-label="Next metric"></button>
+              <button class="icon-btn" id="cardA_table" title="View as table" aria-label="Toggle table view"></button>
+              <button class="icon-btn" id="cardA_expand" title="Expand" aria-label="Expand chart"></button>
+            </div>
+          </div>
+          <div class="chart-wrap"><svg id="cardA_chart"></svg><div class="chart-tooltip" id="cardA_tooltip"></div></div>
+          <div class="hidden-table" id="cardA_hiddenTable"></div>
+        </div>
+        <div class="card" id="cardB">
+          <div class="card-head">
+            <div>
+              <div class="card-title-row"><span class="card-title" id="cardB_title"></span></div>
+              <div class="card-note" id="cardB_note"></div>
+            </div>
+            <div class="card-controls">
+              <button class="icon-btn" id="cardB_prev" title="Previous metric" aria-label="Previous metric"></button>
+              <span class="page-dots" id="cardB_page"></span>
+              <button class="icon-btn" id="cardB_next" title="Next metric" aria-label="Next metric"></button>
+              <button class="icon-btn" id="cardB_table" title="View as table" aria-label="Toggle table view"></button>
+              <button class="icon-btn" id="cardB_expand" title="Expand" aria-label="Expand chart"></button>
+            </div>
+          </div>
+          <div class="chart-wrap"><svg id="cardB_chart"></svg><div class="chart-tooltip" id="cardB_tooltip"></div></div>
+          <div class="hidden-table" id="cardB_hiddenTable"></div>
+        </div>
+      </div>
+
+      <div class="section-heading" id="departments">Departments</div>
+      <div class="grid-split">
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Avg productivity index by department</div>
+              <div class="card-note">Latest month (<span id="prodMonthLabel"></span>) &middot; index, company baseline = 100</div>
+            </div>
+            <div class="card-controls">
+              <button class="icon-btn" id="prod_table" title="View as table" aria-label="Toggle table view"></button>
+              <button class="icon-btn" id="prod_expand" title="Expand" aria-label="Expand chart"></button>
+            </div>
+          </div>
+          <div class="chart-wrap"><svg id="prodChart"></svg><div class="chart-tooltip" id="prodTooltip"></div></div>
+          <div class="hidden-table" id="prodTable"></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Separation reasons</div>
+              <div class="card-note">All departures, Jan 2024 &ndash; Aug 2026</div>
+            </div>
+          </div>
+          <div class="chart-wrap"><svg id="reasonChart"></svg><div class="chart-tooltip" id="reasonTooltip"></div></div>
+          <div class="legend-row" id="reasonLegend"></div>
+        </div>
+      </div>
+
+      <div class="section-heading" id="scorecard">Scorecard</div>
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Department scorecard</div>
+            <div class="card-note">Latest month &middot; ranked by productivity index</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" id="scoreTable">
+            <thead><tr>
+              <th>Department</th><th>Headcount</th><th>Avg performance</th><th>Avg engagement</th>
+              <th>Training completion</th><th>Productivity index</th><th>Attrition rate</th>
+            </tr></thead>
+            <tbody id="scoreTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="footer-note">
+        Synthetic demo dataset &mdash; Meridian Retail Group is a fictional company built to demonstrate this KPI dashboard &amp; reporting-automation workflow.<br/>
+        Source pipeline: raw HRIS export &rarr; Power Query cleaning &rarr; SQL aggregation &rarr; this report. No real employee data is used.
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modalOverlay" hidden>
+    <div class="modal-card" id="modalCard"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const DATA = {"departments":["Sales","Customer Support","Operations","Engineering","Marketing","Finance","Human Resources"],"company":[{"m":"2024-01","hc":381,"attr":1.04,"perf":3.49,"eng":6.97,"train":41.5,"abs":6.45,"prod":97.3},{"m":"2024-02","hc":378,"attr":2.07,"perf":3.49,"eng":6.91,"train":41.5,"abs":3.6,"prod":97.6},{"m":"2024-03","hc":383,"attr":1.03,"perf":3.53,"eng":6.98,"train":41.5,"abs":3.5,"prod":98.2},{"m":"2024-04","hc":380,"attr":1.81,"perf":3.53,"eng":6.96,"train":44.2,"abs":3.85,"prod":98.5},{"m":"2024-05","hc":375,"attr":2.85,"perf":3.55,"eng":6.98,"train":38.7,"abs":4.11,"prod":99.9},{"m":"2024-06","hc":381,"attr":1.3,"perf":3.54,"eng":6.95,"train":40.4,"abs":4.1,"prod":98.9},{"m":"2024-07","hc":375,"attr":2.85,"perf":3.55,"eng":7.03,"train":47.2,"abs":3.85,"prod":98.5},{"m":"2024-08","hc":375,"attr":3.36,"perf":3.52,"eng":6.99,"train":36.8,"abs":4.1,"prod":99.0},{"m":"2024-09","hc":372,"attr":4.12,"perf":3.5,"eng":7.0,"train":41.4,"abs":3.76,"prod":98.3},{"m":"2024-10","hc":380,"attr":2.56,"perf":3.48,"eng":6.93,"train":39.2,"abs":3.63,"prod":98.5},{"m":"2024-11","hc":380,"attr":2.82,"perf":3.49,"eng":6.95,"train":42.6,"abs":3.9,"prod":97.7},{"m":"2024-12","hc":382,"attr":2.31,"perf":3.5,"eng":7.03,"train":40.3,"abs":6.89,"prod":97.5},{"m":"2025-01","hc":383,"attr":2.3,"perf":3.51,"eng":6.95,"train":36.8,"abs":6.45,"prod":98.4},{"m":"2025-02","hc":387,"attr":1.02,"perf":3.69,"eng":7.53,"train":83.0,"abs":3.64,"prod":101.2},{"m":"2025-03","hc":383,"attr":2.3,"perf":3.68,"eng":7.52,"train":83.0,"abs":3.61,"prod":101.9},{"m":"2025-04","hc":385,"attr":1.79,"perf":3.67,"eng":7.59,"train":83.1,"abs":3.64,"prod":103.2},{"m":"2025-05","hc":391,"attr":0.51,"perf":3.69,"eng":7.62,"train":83.1,"abs":3.68,"prod":101.5},{"m":"2025-06","hc":390,"attr":1.52,"perf":3.67,"eng":7.55,"train":82.8,"abs":3.74,"prod":102.7},{"m":"2025-07","hc":390,"attr":1.76,"perf":3.7,"eng":7.57,"train":80.0,"abs":3.87,"prod":101.2},{"m":"2025-08","hc":387,"attr":2.77,"perf":3.66,"eng":7.56,"train":84.8,"abs":4.06,"prod":102.5},{"m":"2025-09","hc":391,"attr":2.26,"perf":3.69,"eng":7.59,"train":80.0,"abs":3.56,"prod":101.1},{"m":"2025-10","hc":394,"attr":1.01,"perf":3.68,"eng":7.55,"train":80.2,"abs":3.92,"prod":101.4},{"m":"2025-11","hc":387,"attr":3.01,"perf":3.67,"eng":7.57,"train":79.8,"abs":3.48,"prod":101.9},{"m":"2025-12","hc":389,"attr":2.99,"perf":3.65,"eng":7.57,"train":81.2,"abs":6.57,"prod":101.8},{"m":"2026-01","hc":395,"attr":1.5,"perf":3.65,"eng":7.58,"train":82.8,"abs":6.73,"prod":102.0},{"m":"2026-02","hc":397,"attr":1.49,"perf":3.68,"eng":7.59,"train":81.4,"abs":3.99,"prod":102.1},{"m":"2026-03","hc":396,"attr":1.98,"perf":3.67,"eng":7.59,"train":81.6,"abs":3.74,"prod":102.6},{"m":"2026-04","hc":396,"attr":2.22,"perf":3.68,"eng":7.6,"train":82.6,"abs":3.32,"prod":101.2},{"m":"2026-05","hc":403,"attr":0.98,"perf":3.65,"eng":7.51,"train":82.9,"abs":3.73,"prod":101.4},{"m":"2026-06","hc":400,"attr":1.97,"perf":3.67,"eng":7.6,"train":83.5,"abs":3.52,"prod":100.8},{"m":"2026-07","hc":405,"attr":1.46,"perf":3.66,"eng":7.54,"train":80.2,"abs":3.65,"prod":101.0},{"m":"2026-08","hc":403,"attr":1.71,"perf":3.66,"eng":7.56,"train":82.4,"abs":3.83,"prod":101.6}],"byDept":{"Sales":[{"m":"2024-01","hc":94,"attr":1.05,"perf":3.52,"eng":7.05,"train":39.4,"abs":5.78,"prod":98.4},{"m":"2024-02","hc":92,"attr":3.16,"perf":3.52,"eng":7.04,"train":41.3,"abs":3.52,"prod":97.8},{"m":"2024-03","hc":96,"attr":0.0,"perf":3.5,"eng":7.02,"train":41.7,"abs":2.93,"prod":98.7},{"m":"2024-04","hc":95,"attr":1.04,"perf":3.53,"eng":7.11,"train":50.5,"abs":4.11,"prod":98.7},{"m":"2024-05","hc":92,"attr":3.16,"perf":3.53,"eng":7.04,"train":41.3,"abs":4.09,"prod":101.2},{"m":"2024-06","hc":93,"attr":2.11,"perf":3.52,"eng":7.14,"train":44.1,"abs":4.25,"prod":98.6},{"m":"2024-07","hc":93,"attr":2.11,"perf":3.54,"eng":7.18,"train":49.5,"abs":2.87,"prod":98.0},{"m":"2024-08","hc":92,"attr":4.17,"perf":3.5,"eng":7.15,"train":40.2,"abs":4.5,"prod":98.1},{"m":"2024-09","hc":94,"attr":2.08,"perf":3.47,"eng":7.06,"train":41.5,"abs":4.36,"prod":99.0},{"m":"2024-10","hc":93,"attr":3.12,"perf":3.47,"eng":7.06,"train":36.6,"abs":3.53,"prod":99.9},{"m":"2024-11","hc":93,"attr":4.12,"perf":3.52,"eng":7.05,"train":43.0,"abs":3.23,"prod":99.2},{"m":"2024-12","hc":93,"attr":3.12,"perf":3.51,"eng":7.13,"train":37.6,"abs":6.71,"prod":97.5},{"m":"2025-01","hc":96,"attr":2.04,"perf":3.49,"eng":6.93,"train":35.4,"abs":6.05,"prod":97.9},{"m":"2025-02","hc":94,"attr":3.09,"perf":3.71,"eng":7.65,"train":90.4,"abs":3.39,"prod":100.9},{"m":"2025-03","hc":95,"attr":2.06,"perf":3.71,"eng":7.62,"train":86.3,"abs":3.46,"prod":101.8},{"m":"2025-04","hc":96,"attr":1.03,"perf":3.68,"eng":7.68,"train":83.3,"abs":3.42,"prod":101.8},{"m":"2025-05","hc":97,"attr":0.0,"perf":3.72,"eng":7.83,"train":79.4,"abs":3.68,"prod":101.4},{"m":"2025-06","hc":98,"attr":0.0,"perf":3.7,"eng":7.76,"train":77.5,"abs":3.6,"prod":101.6},{"m":"2025-07","hc":97,"attr":1.02,"perf":3.77,"eng":7.81,"train":85.6,"abs":3.83,"prod":102.8},{"m":"2025-08","hc":97,"attr":1.02,"perf":3.7,"eng":7.72,"train":85.6,"abs":3.98,"prod":103.6},{"m":"2025-09","hc":97,"attr":2.04,"perf":3.77,"eng":7.68,"train":78.3,"abs":3.63,"prod":102.7},{"m":"2025-10","hc":96,"attr":2.04,"perf":3.73,"eng":7.73,"train":80.2,"abs":3.67,"prod":101.7},{"m":"2025-11","hc":96,"attr":2.04,"perf":3.69,"eng":7.78,"train":77.1,"abs":3.03,"prod":102.3},{"m":"2025-12","hc":98,"attr":1.01,"perf":3.61,"eng":7.65,"train":82.7,"abs":6.07,"prod":102.4},{"m":"2026-01","hc":98,"attr":1.01,"perf":3.69,"eng":7.7,"train":80.6,"abs":6.75,"prod":102.0},{"m":"2026-02","hc":97,"attr":2.02,"perf":3.7,"eng":7.78,"train":82.5,"abs":4.22,"prod":102.8},{"m":"2026-03","hc":96,"attr":3.03,"perf":3.69,"eng":7.62,"train":83.3,"abs":3.62,"prod":103.1},{"m":"2026-04","hc":97,"attr":2.02,"perf":3.71,"eng":7.75,"train":81.4,"abs":4.12,"prod":101.3},{"m":"2026-05","hc":98,"attr":2.0,"perf":3.64,"eng":7.5,"train":82.7,"abs":4.23,"prod":102.8},{"m":"2026-06","hc":100,"attr":1.0,"perf":3.64,"eng":7.64,"train":83.0,"abs":4.43,"prod":99.5},{"m":"2026-07","hc":99,"attr":1.0,"perf":3.63,"eng":7.55,"train":80.8,"abs":3.66,"prod":101.3},{"m":"2026-08","hc":97,"attr":3.0,"perf":3.66,"eng":7.74,"train":85.6,"abs":3.49,"prod":101.4}],"Customer Support":[{"m":"2024-01","hc":79,"attr":1.25,"perf":3.32,"eng":6.45,"train":44.3,"abs":7.05,"prod":96.5},{"m":"2024-02","hc":80,"attr":0.0,"perf":3.33,"eng":6.4,"train":35.0,"abs":3.45,"prod":97.6},{"m":"2024-03","hc":78,"attr":2.5,"perf":3.41,"eng":6.45,"train":37.2,"abs":2.63,"prod":99.9},{"m":"2024-04","hc":77,"attr":3.75,"perf":3.44,"eng":6.42,"train":39.0,"abs":3.4,"prod":98.4},{"m":"2024-05","hc":77,"attr":3.75,"perf":3.42,"eng":6.36,"train":41.6,"abs":4.14,"prod":98.9},{"m":"2024-06","hc":78,"attr":2.5,"perf":3.37,"eng":6.34,"train":42.3,"abs":3.72,"prod":100.2},{"m":"2024-07","hc":75,"attr":6.25,"perf":3.4,"eng":6.43,"train":45.3,"abs":4.76,"prod":96.2},{"m":"2024-08","hc":77,"attr":5.0,"perf":3.37,"eng":6.3,"train":42.9,"abs":3.71,"prod":97.7},{"m":"2024-09","hc":76,"attr":6.17,"perf":3.32,"eng":6.38,"train":46.0,"abs":3.45,"prod":96.5},{"m":"2024-10","hc":79,"attr":3.66,"perf":3.3,"eng":6.42,"train":43.0,"abs":3.98,"prod":97.1},{"m":"2024-11","hc":79,"attr":2.47,"perf":3.36,"eng":6.44,"train":45.6,"abs":3.56,"prod":96.6},{"m":"2024-12","hc":77,"attr":6.17,"perf":3.37,"eng":6.45,"train":36.4,"abs":6.86,"prod":94.9},{"m":"2025-01","hc":80,"attr":1.23,"perf":3.33,"eng":6.45,"train":40.0,"abs":5.83,"prod":98.0},{"m":"2025-02","hc":80,"attr":1.23,"perf":3.52,"eng":7.02,"train":82.5,"abs":3.81,"prod":100.7},{"m":"2025-03","hc":80,"attr":2.44,"perf":3.5,"eng":7.0,"train":82.5,"abs":3.69,"prod":102.8},{"m":"2025-04","hc":80,"attr":2.44,"perf":3.48,"eng":7.09,"train":83.8,"abs":3.93,"prod":103.2},{"m":"2025-05","hc":81,"attr":1.22,"perf":3.54,"eng":6.93,"train":87.7,"abs":3.7,"prod":102.8},{"m":"2025-06","hc":81,"attr":2.41,"perf":3.51,"eng":6.99,"train":80.2,"abs":4.12,"prod":103.6},{"m":"2025-07","hc":81,"attr":1.22,"perf":3.54,"eng":6.97,"train":70.4,"abs":4.06,"prod":101.5},{"m":"2025-08","hc":78,"attr":4.88,"perf":3.51,"eng":7.0,"train":78.2,"abs":4.52,"prod":103.5},{"m":"2025-09","hc":80,"attr":4.82,"perf":3.48,"eng":7.04,"train":80.0,"abs":3.45,"prod":98.3},{"m":"2025-10","hc":83,"attr":0.0,"perf":3.47,"eng":7.17,"train":84.3,"abs":4.48,"prod":100.8},{"m":"2025-11","hc":81,"attr":2.41,"perf":3.49,"eng":6.97,"train":77.8,"abs":3.64,"prod":103.4},{"m":"2025-12","hc":77,"attr":7.23,"perf":3.49,"eng":6.99,"train":84.4,"abs":6.56,"prod":101.0},{"m":"2026-01","hc":80,"attr":3.61,"perf":3.48,"eng":7.11,"train":86.2,"abs":6.67,"prod":101.3},{"m":"2026-02","hc":81,"attr":2.41,"perf":3.49,"eng":7.09,"train":77.8,"abs":3.88,"prod":101.6},{"m":"2026-03","hc":82,"attr":2.38,"perf":3.49,"eng":7.11,"train":81.7,"abs":2.9,"prod":100.8},{"m":"2026-04","hc":81,"attr":3.57,"perf":3.48,"eng":7.02,"train":82.7,"abs":3.59,"prod":99.6},{"m":"2026-05","hc":84,"attr":0.0,"perf":3.49,"eng":6.92,"train":85.7,"abs":3.97,"prod":100.7},{"m":"2026-06","hc":82,"attr":2.38,"perf":3.51,"eng":7.06,"train":78.0,"abs":2.44,"prod":101.1},{"m":"2026-07","hc":84,"attr":1.18,"perf":3.54,"eng":7.0,"train":81.0,"abs":3.63,"prod":101.4},{"m":"2026-08","hc":80,"attr":4.76,"perf":3.49,"eng":6.88,"train":81.2,"abs":3.99,"prod":100.8}],"Operations":[{"m":"2024-01","hc":69,"attr":1.43,"perf":3.47,"eng":6.72,"train":37.7,"abs":7.18,"prod":97.6},{"m":"2024-02","hc":67,"attr":4.29,"perf":3.46,"eng":6.74,"train":53.7,"abs":3.48,"prod":98.5},{"m":"2024-03","hc":70,"attr":1.41,"perf":3.48,"eng":6.95,"train":47.1,"abs":4.08,"prod":95.5},{"m":"2024-04","hc":71,"attr":0.0,"perf":3.42,"eng":6.75,"train":43.7,"abs":3.69,"prod":98.4},{"m":"2024-05","hc":69,"attr":2.82,"perf":3.51,"eng":6.85,"train":37.7,"abs":4.35,"prod":101.7},{"m":"2024-06","hc":69,"attr":1.43,"perf":3.53,"eng":6.9,"train":36.2,"abs":4.21,"prod":99.0},{"m":"2024-07","hc":68,"attr":2.86,"perf":3.55,"eng":7.02,"train":36.8,"abs":3.71,"prod":98.8},{"m":"2024-08","hc":70,"attr":0.0,"perf":3.5,"eng":6.88,"train":34.3,"abs":4.15,"prod":99.3},{"m":"2024-09","hc":66,"attr":5.71,"perf":3.52,"eng":6.94,"train":39.4,"abs":4.04,"prod":97.4},{"m":"2024-10","hc":68,"attr":4.23,"perf":3.47,"eng":6.81,"train":44.1,"abs":3.57,"prod":97.3},{"m":"2024-11","hc":68,"attr":4.23,"perf":3.4,"eng":6.82,"train":42.6,"abs":4.34,"prod":96.2},{"m":"2024-12","hc":70,"attr":1.41,"perf":3.41,"eng":6.93,"train":45.7,"abs":6.87,"prod":97.7},{"m":"2025-01","hc":69,"attr":2.82,"perf":3.46,"eng":6.85,"train":34.8,"abs":7.45,"prod":96.9},{"m":"2025-02","hc":71,"attr":0.0,"perf":3.6,"eng":7.39,"train":73.2,"abs":3.89,"prod":102.3},{"m":"2025-03","hc":70,"attr":1.41,"perf":3.65,"eng":7.46,"train":81.4,"abs":4.08,"prod":102.2},{"m":"2025-04","hc":69,"attr":4.23,"perf":3.6,"eng":7.45,"train":85.5,"abs":3.73,"prod":103.5},{"m":"2025-05","hc":71,"attr":1.39,"perf":3.6,"eng":7.52,"train":83.1,"abs":4.16,"prod":99.6},{"m":"2025-06","hc":72,"attr":1.37,"perf":3.56,"eng":7.48,"train":90.3,"abs":3.57,"prod":101.6},{"m":"2025-07","hc":70,"attr":2.78,"perf":3.63,"eng":7.3,"train":80.0,"abs":3.4,"prod":101.6},{"m":"2025-08","hc":71,"attr":1.39,"perf":3.54,"eng":7.47,"train":91.5,"abs":4.56,"prod":100.1},{"m":"2025-09","hc":72,"attr":0.0,"perf":3.65,"eng":7.49,"train":80.6,"abs":3.77,"prod":101.6},{"m":"2025-10","hc":71,"attr":1.39,"perf":3.66,"eng":7.41,"train":80.3,"abs":4.49,"prod":103.9},{"m":"2025-11","hc":71,"attr":2.74,"perf":3.64,"eng":7.39,"train":81.7,"abs":3.22,"prod":99.3},{"m":"2025-12","hc":71,"attr":2.74,"perf":3.66,"eng":7.52,"train":91.5,"abs":6.91,"prod":102.2},{"m":"2026-01","hc":72,"attr":1.37,"perf":3.58,"eng":7.48,"train":83.3,"abs":6.61,"prod":102.1},{"m":"2026-02","hc":73,"attr":0.0,"perf":3.67,"eng":7.56,"train":80.8,"abs":3.91,"prod":101.9},{"m":"2026-03","hc":71,"attr":2.74,"perf":3.66,"eng":7.48,"train":85.9,"abs":3.02,"prod":103.9},{"m":"2026-04","hc":72,"attr":1.37,"perf":3.63,"eng":7.51,"train":84.7,"abs":3.04,"prod":103.7},{"m":"2026-05","hc":72,"attr":1.37,"perf":3.6,"eng":7.47,"train":77.8,"abs":4.03,"prod":103.3},{"m":"2026-06","hc":70,"attr":4.11,"perf":3.64,"eng":7.7,"train":82.9,"abs":3.61,"prod":101.1},{"m":"2026-07","hc":73,"attr":2.67,"perf":3.57,"eng":7.56,"train":78.1,"abs":3.72,"prod":99.3},{"m":"2026-08","hc":74,"attr":0.0,"perf":3.59,"eng":7.47,"train":81.1,"abs":4.38,"prod":101.2}],"Engineering":[{"m":"2024-01","hc":54,"attr":1.82,"perf":3.6,"eng":7.32,"train":46.3,"abs":7.05,"prod":96.7},{"m":"2024-02","hc":55,"attr":0.0,"perf":3.66,"eng":7.29,"train":47.3,"abs":4.07,"prod":95.6},{"m":"2024-03","hc":55,"attr":0.0,"perf":3.67,"eng":7.29,"train":32.7,"abs":3.81,"prod":98.1},{"m":"2024-04","hc":54,"attr":1.82,"perf":3.75,"eng":7.32,"train":38.9,"abs":4.06,"prod":98.3},{"m":"2024-05","hc":54,"attr":1.82,"perf":3.74,"eng":7.3,"train":29.6,"abs":4.67,"prod":98.9},{"m":"2024-06","hc":55,"attr":0.0,"perf":3.8,"eng":7.31,"train":40.0,"abs":3.29,"prod":98.1},{"m":"2024-07","hc":54,"attr":1.82,"perf":3.76,"eng":7.43,"train":51.9,"abs":4.14,"prod":102.1},{"m":"2024-08","hc":54,"attr":1.82,"perf":3.68,"eng":7.48,"train":25.9,"abs":4.67,"prod":100.7},{"m":"2024-09","hc":53,"attr":3.64,"perf":3.65,"eng":7.4,"train":34.0,"abs":3.5,"prod":98.4},{"m":"2024-10","hc":55,"attr":0.0,"perf":3.65,"eng":7.32,"train":32.7,"abs":4.16,"prod":98.3},{"m":"2024-11","hc":56,"attr":0.0,"perf":3.65,"eng":7.33,"train":35.7,"abs":3.66,"prod":97.4},{"m":"2024-12","hc":56,"attr":0.0,"perf":3.68,"eng":7.42,"train":37.5,"abs":6.21,"prod":96.5},{"m":"2025-01","hc":56,"attr":0.0,"perf":3.75,"eng":7.46,"train":41.1,"abs":6.89,"prod":98.3},{"m":"2025-02","hc":56,"attr":0.0,"perf":3.97,"eng":7.89,"train":75.0,"abs":3.23,"prod":100.2},{"m":"2025-03","hc":54,"attr":3.57,"perf":3.89,"eng":8.14,"train":90.7,"abs":3.88,"prod":100.7},{"m":"2025-04","hc":55,"attr":1.79,"perf":3.91,"eng":8.18,"train":85.5,"abs":3.12,"prod":102.6},{"m":"2025-05","hc":56,"attr":0.0,"perf":3.84,"eng":8.22,"train":80.4,"abs":3.49,"prod":101.7},{"m":"2025-06","hc":54,"attr":3.57,"perf":3.9,"eng":7.96,"train":83.3,"abs":3.62,"prod":102.2},{"m":"2025-07","hc":54,"attr":3.57,"perf":3.93,"eng":8.08,"train":75.9,"abs":3.7,"prod":101.1},{"m":"2025-08","hc":55,"attr":3.57,"perf":3.8,"eng":7.99,"train":81.8,"abs":3.55,"prod":101.1},{"m":"2025-09","hc":56,"attr":1.75,"perf":3.84,"eng":8.09,"train":87.5,"abs":3.32,"prod":99.2},{"m":"2025-10","hc":57,"attr":0.0,"perf":3.82,"eng":7.9,"train":79.0,"abs":3.59,"prod":99.0},{"m":"2025-11","hc":55,"attr":3.51,"perf":3.85,"eng":8.06,"train":83.6,"abs":4.24,"prod":104.0},{"m":"2025-12","hc":55,"attr":3.51,"perf":3.89,"eng":8.01,"train":74.5,"abs":5.89,"prod":102.1},{"m":"2026-01","hc":56,"attr":1.75,"perf":3.86,"eng":7.91,"train":80.4,"abs":6.38,"prod":102.5},{"m":"2026-02","hc":56,"attr":1.75,"perf":3.84,"eng":7.9,"train":82.1,"abs":3.74,"prod":101.4},{"m":"2026-03","hc":57,"attr":0.0,"perf":3.82,"eng":7.94,"train":79.0,"abs":4.26,"prod":103.7},{"m":"2026-04","hc":55,"attr":3.51,"perf":3.89,"eng":8.07,"train":74.5,"abs":2.94,"prod":100.4},{"m":"2026-05","hc":57,"attr":0.0,"perf":3.89,"eng":7.97,"train":86.0,"abs":2.92,"prod":100.2},{"m":"2026-06","hc":57,"attr":1.72,"perf":3.88,"eng":7.87,"train":80.7,"abs":4.43,"prod":101.3},{"m":"2026-07","hc":56,"attr":3.45,"perf":3.82,"eng":7.92,"train":76.8,"abs":3.57,"prod":101.6},{"m":"2026-08","hc":58,"attr":0.0,"perf":3.86,"eng":7.97,"train":82.8,"abs":3.37,"prod":101.7}],"Marketing":[{"m":"2024-01","hc":35,"attr":0.0,"perf":3.54,"eng":7.22,"train":40.0,"abs":5.58,"prod":95.3},{"m":"2024-02","hc":34,"attr":2.86,"perf":3.55,"eng":6.92,"train":29.4,"abs":3.5,"prod":97.3},{"m":"2024-03","hc":35,"attr":0.0,"perf":3.69,"eng":7.11,"train":48.6,"abs":3.4,"prod":98.3},{"m":"2024-04","hc":33,"attr":5.71,"perf":3.65,"eng":7.26,"train":57.6,"abs":5.19,"prod":97.4},{"m":"2024-05","hc":35,"attr":0.0,"perf":3.64,"eng":7.29,"train":31.4,"abs":3.13,"prod":96.7},{"m":"2024-06","hc":35,"attr":0.0,"perf":3.69,"eng":7.0,"train":31.4,"abs":5.85,"prod":99.8},{"m":"2024-07","hc":34,"attr":2.86,"perf":3.67,"eng":7.13,"train":58.8,"abs":4.2,"prod":100.1},{"m":"2024-08","hc":34,"attr":2.86,"perf":3.69,"eng":7.17,"train":35.3,"abs":2.94,"prod":99.4},{"m":"2024-09","hc":33,"attr":5.71,"perf":3.6,"eng":7.38,"train":39.4,"abs":3.17,"prod":100.4},{"m":"2024-10","hc":35,"attr":0.0,"perf":3.54,"eng":6.92,"train":28.6,"abs":2.99,"prod":98.3},{"m":"2024-11","hc":36,"attr":0.0,"perf":3.57,"eng":7.15,"train":36.1,"abs":4.63,"prod":98.9},{"m":"2024-12","hc":36,"attr":0.0,"perf":3.61,"eng":7.26,"train":44.4,"abs":7.54,"prod":101.5},{"m":"2025-01","hc":36,"attr":0.0,"perf":3.64,"eng":7.19,"train":36.1,"abs":5.82,"prod":99.2},{"m":"2025-02","hc":36,"attr":0.0,"perf":3.87,"eng":7.79,"train":83.3,"abs":2.91,"prod":102.5},{"m":"2025-03","hc":35,"attr":2.78,"perf":3.83,"eng":7.6,"train":74.3,"abs":2.99,"prod":103.3},{"m":"2025-04","hc":35,"attr":0.0,"perf":3.78,"eng":7.66,"train":85.7,"abs":3.4,"prod":104.5},{"m":"2025-05","hc":36,"attr":0.0,"perf":3.85,"eng":7.56,"train":80.6,"abs":3.84,"prod":103.6},{"m":"2025-06","hc":36,"attr":0.0,"perf":3.75,"eng":7.7,"train":77.8,"abs":4.1,"prod":103.6},{"m":"2025-07","hc":36,"attr":2.7,"perf":3.79,"eng":7.73,"train":88.9,"abs":2.91,"prod":97.8},{"m":"2025-08","hc":36,"attr":2.7,"perf":3.82,"eng":7.72,"train":91.7,"abs":3.44,"prod":104.2},{"m":"2025-09","hc":35,"attr":2.78,"perf":3.9,"eng":7.7,"train":82.9,"abs":2.31,"prod":106.0},{"m":"2025-10","hc":36,"attr":2.78,"perf":3.78,"eng":7.59,"train":77.8,"abs":3.44,"prod":101.0},{"m":"2025-11","hc":33,"attr":8.33,"perf":3.79,"eng":7.83,"train":66.7,"abs":3.17,"prod":100.3},{"m":"2025-12","hc":37,"attr":0.0,"perf":3.66,"eng":7.66,"train":59.5,"abs":7.46,"prod":99.3},{"m":"2026-01","hc":38,"attr":0.0,"perf":3.72,"eng":7.71,"train":81.6,"abs":6.02,"prod":101.6},{"m":"2026-02","hc":39,"attr":0.0,"perf":3.74,"eng":7.6,"train":87.2,"abs":4.88,"prod":100.2},{"m":"2026-03","hc":39,"attr":0.0,"perf":3.8,"eng":7.72,"train":82.0,"abs":5.49,"prod":102.4},{"m":"2026-04","hc":40,"attr":0.0,"perf":3.82,"eng":7.78,"train":95.0,"abs":2.74,"prod":101.2},{"m":"2026-05","hc":39,"attr":2.5,"perf":3.83,"eng":7.61,"train":76.9,"abs":2.44,"prod":101.1},{"m":"2026-06","hc":39,"attr":0.0,"perf":3.9,"eng":7.73,"train":94.9,"abs":3.17,"prod":102.1},{"m":"2026-07","hc":39,"attr":0.0,"perf":3.93,"eng":7.67,"train":82.0,"abs":3.17,"prod":101.8},{"m":"2026-08","hc":39,"attr":0.0,"perf":3.79,"eng":7.68,"train":71.8,"abs":4.15,"prod":102.9}],"Finance":[{"m":"2024-01","hc":30,"attr":0.0,"perf":3.52,"eng":7.31,"train":33.3,"abs":6.35,"prod":98.2},{"m":"2024-02","hc":30,"attr":3.23,"perf":3.56,"eng":7.16,"train":33.3,"abs":3.97,"prod":98.2},{"m":"2024-03","hc":29,"attr":3.33,"perf":3.58,"eng":7.37,"train":34.5,"abs":3.45,"prod":99.1},{"m":"2024-04","hc":30,"attr":0.0,"perf":3.55,"eng":7.29,"train":33.3,"abs":3.81,"prod":98.0},{"m":"2024-05","hc":29,"attr":3.33,"perf":3.57,"eng":7.41,"train":51.7,"abs":3.94,"prod":99.5},{"m":"2024-06","hc":30,"attr":0.0,"perf":3.54,"eng":7.34,"train":50.0,"abs":3.49,"prod":96.4},{"m":"2024-07","hc":30,"attr":0.0,"perf":3.57,"eng":7.04,"train":53.3,"abs":5.08,"prod":97.0},{"m":"2024-08","hc":27,"attr":10.0,"perf":3.61,"eng":7.33,"train":29.6,"abs":3.88,"prod":100.7},{"m":"2024-09","hc":29,"attr":3.33,"perf":3.51,"eng":7.24,"train":51.7,"abs":2.96,"prod":100.7},{"m":"2024-10","hc":30,"attr":0.0,"perf":3.47,"eng":7.16,"train":43.3,"abs":3.97,"prod":98.5},{"m":"2024-11","hc":28,"attr":6.67,"perf":3.46,"eng":7.13,"train":39.3,"abs":5.27,"prod":99.0},{"m":"2024-12","hc":30,"attr":0.0,"perf":3.54,"eng":7.2,"train":40.0,"abs":6.98,"prod":96.8},{"m":"2025-01","hc":29,"attr":3.33,"perf":3.54,"eng":7.14,"train":34.5,"abs":6.08,"prod":101.8},{"m":"2025-02","hc":30,"attr":0.0,"perf":3.67,"eng":7.78,"train":93.3,"abs":4.76,"prod":102.4},{"m":"2025-03","hc":29,"attr":3.33,"perf":3.57,"eng":7.58,"train":79.3,"abs":2.79,"prod":100.5},{"m":"2025-04","hc":30,"attr":0.0,"perf":3.77,"eng":7.55,"train":83.3,"abs":3.81,"prod":105.3},{"m":"2025-05","hc":30,"attr":0.0,"perf":3.69,"eng":7.87,"train":90.0,"abs":3.02,"prod":100.9},{"m":"2025-06","hc":29,"attr":3.33,"perf":3.66,"eng":7.62,"train":86.2,"abs":3.78,"prod":104.7},{"m":"2025-07","hc":31,"attr":0.0,"perf":3.59,"eng":7.64,"train":80.7,"abs":5.22,"prod":99.5},{"m":"2025-08","hc":29,"attr":6.45,"perf":3.64,"eng":7.58,"train":89.7,"abs":3.61,"prod":101.6},{"m":"2025-09","hc":31,"attr":0.0,"perf":3.57,"eng":7.84,"train":77.4,"abs":4.3,"prod":99.0},{"m":"2025-10","hc":31,"attr":0.0,"perf":3.7,"eng":7.63,"train":71.0,"abs":3.38,"prod":100.1},{"m":"2025-11","hc":30,"attr":3.23,"perf":3.67,"eng":7.71,"train":93.3,"abs":3.33,"prod":100.0},{"m":"2025-12","hc":31,"attr":0.0,"perf":3.64,"eng":7.74,"train":80.7,"abs":8.14,"prod":103.0},{"m":"2026-01","hc":31,"attr":0.0,"perf":3.64,"eng":7.78,"train":80.7,"abs":7.68,"prod":102.8},{"m":"2026-02","hc":31,"attr":3.12,"perf":3.71,"eng":7.64,"train":87.1,"abs":3.53,"prod":103.9},{"m":"2026-03","hc":31,"attr":0.0,"perf":3.7,"eng":7.85,"train":83.9,"abs":3.99,"prod":101.1},{"m":"2026-04","hc":30,"attr":3.23,"perf":3.73,"eng":7.78,"train":80.0,"abs":2.22,"prod":101.7},{"m":"2026-05","hc":31,"attr":0.0,"perf":3.73,"eng":7.86,"train":90.3,"abs":4.3,"prod":98.3},{"m":"2026-06","hc":30,"attr":3.23,"perf":3.61,"eng":7.9,"train":90.0,"abs":3.33,"prod":101.5},{"m":"2026-07","hc":32,"attr":0.0,"perf":3.62,"eng":7.76,"train":87.5,"abs":4.17,"prod":100.6},{"m":"2026-08","hc":32,"attr":0.0,"perf":3.72,"eng":7.82,"train":84.4,"abs":2.68,"prod":102.6}],"Human Resources":[{"m":"2024-01","hc":20,"attr":0.0,"perf":3.64,"eng":7.55,"train":55.0,"abs":4.76,"prod":97.5},{"m":"2024-02","hc":20,"attr":0.0,"perf":3.51,"eng":7.41,"train":45.0,"abs":3.33,"prod":98.8},{"m":"2024-03","hc":20,"attr":0.0,"perf":3.55,"eng":7.34,"train":60.0,"abs":6.9,"prod":97.9},{"m":"2024-04","hc":20,"attr":0.0,"perf":3.49,"eng":7.17,"train":45.0,"abs":2.14,"prod":102.3},{"m":"2024-05","hc":19,"attr":5.0,"perf":3.59,"eng":7.45,"train":36.8,"abs":3.76,"prod":100.5},{"m":"2024-06","hc":21,"attr":0.0,"perf":3.37,"eng":7.02,"train":33.3,"abs":4.54,"prod":99.0},{"m":"2024-07","hc":21,"attr":0.0,"perf":3.45,"eng":7.25,"train":38.1,"abs":2.27,"prod":97.7},{"m":"2024-08","hc":21,"attr":0.0,"perf":3.43,"eng":7.26,"train":47.6,"abs":4.31,"prod":99.4},{"m":"2024-09","hc":21,"attr":0.0,"perf":3.62,"eng":7.26,"train":38.1,"abs":4.08,"prod":96.9},{"m":"2024-10","hc":20,"attr":4.76,"perf":3.66,"eng":7.36,"train":50.0,"abs":2.14,"prod":102.8},{"m":"2024-11","hc":20,"attr":0.0,"perf":3.68,"eng":7.24,"train":65.0,"abs":4.29,"prod":97.9},{"m":"2024-12","hc":20,"attr":0.0,"perf":3.53,"eng":7.42,"train":50.0,"abs":8.57,"prod":103.5},{"m":"2025-01","hc":17,"attr":15.0,"perf":3.65,"eng":7.21,"train":29.4,"abs":8.12,"prod":101.1},{"m":"2025-02","hc":20,"attr":0.0,"perf":3.53,"eng":7.57,"train":90.0,"abs":4.05,"prod":99.0},{"m":"2025-03","hc":20,"attr":0.0,"perf":3.68,"eng":7.48,"train":75.0,"abs":3.81,"prod":101.0},{"m":"2025-04","hc":20,"attr":0.0,"perf":3.7,"eng":7.86,"train":60.0,"abs":4.76,"prod":104.3},{"m":"2025-05","hc":20,"attr":0.0,"perf":3.68,"eng":7.87,"train":85.0,"abs":3.1,"prod":100.4},{"m":"2025-06","hc":20,"attr":0.0,"perf":3.74,"eng":7.55,"train":95.0,"abs":3.1,"prod":105.1},{"m":"2025-07","hc":21,"attr":0.0,"perf":3.57,"eng":7.96,"train":85.7,"abs":4.99,"prod":100.5},{"m":"2025-08","hc":21,"attr":0.0,"perf":3.76,"eng":7.79,"train":71.4,"abs":4.08,"prod":103.9},{"m":"2025-09","hc":20,"attr":4.76,"perf":3.77,"eng":7.69,"train":65.0,"abs":4.52,"prod":103.2},{"m":"2025-10","hc":20,"attr":0.0,"perf":3.78,"eng":7.47,"train":85.0,"abs":3.33,"prod":103.4},{"m":"2025-11","hc":21,"attr":0.0,"perf":3.63,"eng":7.67,"train":85.7,"abs":4.54,"prod":102.0},{"m":"2025-12","hc":20,"attr":4.76,"perf":3.68,"eng":8.0,"train":85.0,"abs":5.71,"prod":103.0},{"m":"2026-01","hc":20,"attr":0.0,"perf":3.75,"eng":7.67,"train":90.0,"abs":8.1,"prod":102.2},{"m":"2026-02","hc":20,"attr":0.0,"perf":3.76,"eng":7.78,"train":70.0,"abs":3.33,"prod":104.8},{"m":"2026-03","hc":20,"attr":4.76,"perf":3.57,"eng":8.24,"train":60.0,"abs":5.0,"prod":102.7},{"m":"2026-04","hc":21,"attr":0.0,"perf":3.57,"eng":7.61,"train":81.0,"abs":3.17,"prod":100.0},{"m":"2026-05","hc":22,"attr":0.0,"perf":3.45,"eng":8.09,"train":81.8,"abs":3.25,"prod":98.9},{"m":"2026-06","hc":22,"attr":0.0,"perf":3.71,"eng":7.84,"train":86.4,"abs":1.73,"prod":100.3},{"m":"2026-07","hc":22,"attr":0.0,"perf":3.69,"eng":7.95,"train":77.3,"abs":3.68,"prod":102.1},{"m":"2026-08","hc":23,"attr":0.0,"perf":3.65,"eng":7.87,"train":91.3,"abs":5.18,"prod":103.0}]},"scorecard":[{"dept":"Human Resources","hc":23,"perf":3.65,"eng":7.87,"train":91.3,"prod":103.0,"attr":0.0},{"dept":"Marketing","hc":39,"perf":3.79,"eng":7.68,"train":71.8,"prod":102.9,"attr":0.0},{"dept":"Finance","hc":32,"perf":3.72,"eng":7.82,"train":84.4,"prod":102.6,"attr":0.0},{"dept":"Engineering","hc":58,"perf":3.86,"eng":7.97,"train":82.8,"prod":101.7,"attr":0.0},{"dept":"Sales","hc":97,"perf":3.66,"eng":7.74,"train":85.6,"prod":101.4,"attr":3.0},{"dept":"Operations","hc":74,"perf":3.59,"eng":7.47,"train":81.1,"prod":101.2,"attr":0.0},{"dept":"Customer Support","hc":80,"perf":3.49,"eng":6.88,"train":81.2,"prod":100.8,"attr":4.76}],"reasons":[{"reason":"Voluntary - Career Growth","count":78,"pct":30.6},{"reason":"Voluntary - Compensation","count":48,"pct":18.8},{"reason":"Involuntary - Restructuring","count":43,"pct":16.9},{"reason":"Involuntary - Performance","count":39,"pct":15.3},{"reason":"Voluntary - Relocation","count":29,"pct":11.4},{"reason":"Retirement","count":18,"pct":7.1}],"headline":{"latestMonth":"2026-08","headcount":403,"headcountDelta":-2,"attrition":1.71,"attritionDelta":0.25,"engagement":7.56,"engagementDeltaVsProgram":0.61,"training":82.4,"trainingDeltaVsProgram":45.6,"productivity":101.6,"productivityDelta":0.6,"totalHeadcountAllTime":665,"activeHeadcount":410},"latestMonth":"2026-08"};
+
+  // ---------------- icon library (small, hand-drawn line glyphs) ----------------
+  const ICONS = {
+    overview: '<rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/>',
+    trends: '<polyline points="3,17 9,11 13,15 21,6"/><polyline points="15,6 21,6 21,12"/>',
+    depts: '<line x1="5" y1="20" x2="5" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="19" y1="20" x2="19" y2="14"/>',
+    scorecard: '<line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/>',
+    chevronLeft: '<polyline points="15,5 8,12 15,19"/>',
+    chevronRight: '<polyline points="9,5 16,12 9,19"/>',
+    table: '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="10" x2="9" y2="20"/>',
+    expand: '<path d="M4 9V5a1 1 0 0 1 1-1h4"/><path d="M15 4h4a1 1 0 0 1 1 1v4"/><path d="M20 15v4a1 1 0 0 1-1 1h-4"/><path d="M9 20H5a1 1 0 0 1-1-1v-4"/>',
+    close: '<line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/>',
+    up: '<polyline points="5,15 12,8 19,15"/>',
+    down: '<polyline points="5,9 12,16 19,9"/>',
+    flat: '<line x1="5" y1="12" x2="19" y2="12"/>',
+    users: '<circle cx="12" cy="8.3" r="3.4"/><path d="M5 20c0-3.9 3.1-7 7-7s7 3.1 7 7"/>',
+    userMinus: '<circle cx="10" cy="8" r="3.2"/><path d="M4 20c0-3.6 3-6.4 6.6-6.4"/><line x1="15" y1="14" x2="21" y2="14"/>',
+    smile: '<circle cx="12" cy="12" r="8"/><path d="M8.3 13.6c1 1.3 2.2 2 3.7 2s2.7-.7 3.7-2"/><circle cx="9" cy="10" r=".7" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r=".7" fill="currentColor" stroke="none"/>',
+    book: '<path d="M4 5.5C4 4.7 4.7 4 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5v-13Z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H13v16h5.5c.8 0 1.5-.7 1.5-1.5v-13Z"/>',
+    activity: '<polyline points="3,12 8,12 10,6 14,18 16,12 21,12"/>',
+  };
+  function icon(name, size, strokeW){
+    size = size || 16; strokeW = strokeW || 2;
+    return `<svg class="icon" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${strokeW}" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+  }
+  document.querySelectorAll('[data-scroll]').forEach(() => {}); // noop placeholder, wired below
+
+  const COLOR_HEX = {
+    "Sales": "#2a78d6", "Customer Support": "#eb6834", "Operations": "#1baf7a",
+    "Engineering": "#c98200", "Marketing": "#d2588a", "Finance": "#1a7a1a", "Human Resources": "#4a3aa7"
+  };
+  const REASON_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#c98200", "#d2588a", "#1a7a1a"];
+
+  const deptSel = document.getElementById("deptFilter");
+  const rangeSel = document.getElementById("rangeFilter");
+
+  DATA.departments.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d; opt.textContent = d;
+    deptSel.appendChild(opt);
+  });
+  const allOpt = document.createElement("option");
+  allOpt.value = "__ALL__"; allOpt.textContent = "All departments";
+  deptSel.insertBefore(allOpt, deptSel.firstChild);
+  deptSel.value = "__ALL__";
+
+  document.getElementById("prodMonthLabel").textContent = fmtMonth(DATA.latestMonth);
+
+  function fmtMonth(m){
+    const [y, mo] = m.split("-");
+    const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return names[parseInt(mo,10)-1] + " " + y;
+  }
+  function fmtPct(v, d){ return (v===null||v===undefined) ? "–" : v.toFixed(d===undefined?1:d) + "%"; }
+  function fmtNum(v, d){ return (v===null||v===undefined) ? "–" : v.toFixed(d===undefined?1:d); }
+  function round2(v){ return Math.round(v*100)/100; }
+
+  // "Nice" axis scale (d3-tick style): snaps min/max/step to round numbers
+  // so gridlines read as 0 / 1,000 / 2,000 rather than arbitrary padded values.
+  function niceNumber(range, round){
+    const exp = Math.floor(Math.log10(range));
+    const frac = range / Math.pow(10, exp);
+    let niceFrac;
+    if (round) {
+      if (frac < 1.5) niceFrac = 1; else if (frac < 3) niceFrac = 2;
+      else if (frac < 7) niceFrac = 5; else niceFrac = 10;
+    } else {
+      if (frac <= 1) niceFrac = 1; else if (frac <= 2) niceFrac = 2;
+      else if (frac <= 5) niceFrac = 5; else niceFrac = 10;
+    }
+    return niceFrac * Math.pow(10, exp);
+  }
+  function niceScale(min, max, tickCount){
+    if (min === max) { min -= 1; max += 1; }
+    const range = niceNumber(max - min, false);
+    const step = niceNumber(range / (tickCount - 1), true);
+    const niceMin = Math.floor(min / step) * step;
+    const niceMax = Math.ceil(max / step) * step;
+    const ticks = [];
+    for (let v = niceMin; v <= niceMax + step*0.001; v += step) ticks.push(Math.round(v*1000)/1000);
+    return { min: niceMin, max: niceMax, step, ticks };
+  }
+
+  function currentSeries(){
+    const dep = deptSel.value;
+    const n = parseInt(rangeSel.value, 10);
+    const full = dep === "__ALL__" ? DATA.company : DATA.byDept[dep];
+    return full.slice(Math.max(0, full.length - n));
+  }
+
+  // ---------------- Metric catalogue for the two cycling trend cards ----------------
+  const METRICS = {
+    attr:  { key:"attr",  label:"Attrition rate",        unit:"%", decimals:2, color:"var(--s-orange)",  colorHex:"#eb6834", floorZero:true,
+             note:"Monthly voluntary + involuntary separations ÷ starting headcount",
+             annotations:[{m:"2024-08", label:"Restructuring"}] },
+    abs:   { key:"abs",   label:"Absenteeism rate",       unit:"%", decimals:2, color:"var(--s-magenta)", colorHex:"#d2588a", floorZero:true,
+             note:"Average unplanned absence days ÷ ~21 working days a month", annotations:[] },
+    eng:   { key:"eng",   label:"Engagement score",       unit:"",  decimals:2, color:"var(--s-aqua)",    colorHex:"#1baf7a", floorZero:false,
+             note:"Average monthly pulse-survey score, 1–10 scale",
+             annotations:[{m:"2025-02", label:"Engagement program launch"}] },
+    train: { key:"train", label:"Training completion",    unit:"%", decimals:1, color:"var(--s-violet)",  colorHex:"#4a3aa7", floorZero:true,
+             note:"Share of employees completing ≥ 4 training hours that month",
+             annotations:[{m:"2025-02", label:"Engagement program launch"}] },
+    prod:  { key:"prod",  label:"Productivity index",     unit:"",  decimals:1, color:"var(--s-blue)",    colorHex:"#2a78d6", floorZero:false,
+             note:"Company baseline = 100",
+             annotations:[{m:"2025-02", label:"Engagement program launch"}] },
+  };
+  const cardAOrder = ["attr","abs"];
+  const cardBOrder = ["eng","train","prod"];
+  let cardAIdx = 0, cardBIdx = 0;
+
+  // ---------------- Stat tiles ----------------
+  const TILE_DEFS = [
+    { key:"hc",   label:"Active headcount",      chip:"var(--s-blue)",    iconName:"users",
+      fmt:v=>v.toLocaleString(), goodDir:1, deltaLabel:(d,unit)=>`${d>0?"+":""}${d} vs prior mo.` },
+    { key:"attr", label:"Attrition rate",         chip:"var(--s-orange)",  iconName:"userMinus",
+      fmt:v=>fmtPct(v,2), goodDir:-1, deltaLabel:d=>`${d>0?"+":""}${d.toFixed(2)}pp vs prior mo.` },
+    { key:"eng",  label:"Engagement score",       chip:"var(--s-aqua)",    iconName:"smile",
+      fmt:v=>fmtNum(v,2)+" / 10", goodDir:1, deltaLabel:d=>`${d>0?"+":""}${d.toFixed(2)} vs pre-program`, vsProgram:true },
+    { key:"train",label:"Training completion",    chip:"var(--s-violet)",  iconName:"book",
+      fmt:v=>fmtPct(v,1), goodDir:1, deltaLabel:d=>`${d>0?"+":""}${d.toFixed(1)}pp vs pre-program`, vsProgram:true },
+    { key:"prod", label:"Productivity index",     chip:"var(--s-green)",   iconName:"activity",
+      fmt:v=>fmtNum(v,1), goodDir:1, deltaLabel:d=>`${d>0?"+":""}${d.toFixed(1)} vs prior mo.` },
+  ];
+
+  function renderTiles(){
+    const series = currentSeries();
+    const full = deptSel.value === "__ALL__" ? DATA.company : DATA.byDept[deptSel.value];
+    const last = series[series.length - 1];
+    const prev = series.length > 1 ? series[series.length - 2] : last;
+    const program = full.find(r => r.m === "2025-01") || full[0];
+
+    const row = document.getElementById("tileRow");
+    row.innerHTML = "";
+    TILE_DEFS.forEach(t => {
+      const baseline = t.vsProgram ? (program ? program[t.key] : last[t.key]) : prev[t.key];
+      const delta = round2(last[t.key] - baseline);
+      const dir = delta === 0 ? 0 : (delta > 0 ? 1 : -1);
+      const goodBad = delta === 0 ? "flat" : (dir === t.goodDir ? "good" : "bad");
+      const arrowIcon = delta === 0 ? "flat" : (dir > 0 ? "up" : "down");
+      const spark = series.map(r => r[t.key]);
+      const el = document.createElement("div");
+      el.className = "tile";
+      el.innerHTML = `
+        <div class="tile-top">
+          <div class="tile-chip" style="background:${t.chip}">${icon(t.iconName,16,2.1)}</div>
+          <div class="tile-label">${t.label}</div>
+        </div>
+        <div class="tile-value num">${t.fmt(last[t.key])}</div>
+        <div class="tile-delta ${goodBad}">${icon(arrowIcon,10,2.6)}${t.deltaLabel(delta)}</div>
+        <div class="tile-spark">${sparkSvg(spark, t.chip)}</div>
+      `;
+      row.appendChild(el);
+    });
+  }
+
+  function sparkSvg(values, colorVar){
+    const w = 140, h = 30, pad = 2;
+    const min = Math.min(...values), max = Math.max(...values);
+    const range = (max - min) || 1;
+    const pts = values.map((v,i) => {
+      const x = pad + (i/(values.length-1||1)) * (w - pad*2);
+      const y = h - pad - ((v-min)/range) * (h - pad*2);
+      return [x,y];
+    });
+    const path = pts.map((p,i) => (i===0?"M":"L") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+    const last = pts[pts.length-1];
+    return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+      <path d="${path}" fill="none" stroke="var(--grid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="${path}" fill="none" stroke="${colorVar}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" stroke-dasharray="1000" stroke-dashoffset="0"/>
+      <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.6" fill="${colorVar}" stroke="#fff" stroke-width="1.4"/>
+    </svg>`;
+  }
+
+  // ---------------- Line chart (generic, metric-descriptor driven) ----------------
+  function renderLineChart(svgId, tooltipId, tableId, series, metric, dims){
+    const svg = document.getElementById(svgId);
+    const tooltip = document.getElementById(tooltipId);
+    const W = (dims && dims.w) || 520, H = (dims && dims.h) || 210;
+    const ML = 40, MR = 14, MT = 16, MB = 26;
+    const plotW = W - ML - MR, plotH = H - MT - MB;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width", "100%");
+    svg.setAttribute("height", H);
+    svg.innerHTML = "";
+
+    const key = metric.key, decimals = metric.decimals, unit = metric.unit, colorHex = metric.colorHex;
+    const vals = series.map(r => r[key]).filter(v => v !== null && v !== undefined);
+    let rawMin = Math.min(...vals), rawMax = Math.max(...vals);
+    if (rawMin === rawMax) { rawMin -= 1; rawMax += 1; }
+    const padV = (rawMax - rawMin) * 0.18;
+    const nice = niceScale(metric.floorZero ? Math.max(0, rawMin - padV) : rawMin - padV, rawMax + padV, 4);
+    const min = metric.floorZero ? Math.max(0, nice.min) : nice.min;
+    const max = nice.max;
+
+    const x = i => ML + (i / (series.length - 1 || 1)) * plotW;
+    const y = v => MT + plotH - ((v - min) / (max - min)) * plotH;
+
+    nice.ticks.forEach(val => {
+      const gy = y(val);
+      const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+      line.setAttribute("x1", ML); line.setAttribute("x2", W-MR);
+      line.setAttribute("y1", gy.toFixed(1)); line.setAttribute("y2", gy.toFixed(1));
+      line.setAttribute("class","grid-line");
+      svg.appendChild(line);
+      const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+      t.setAttribute("x", ML-8); t.setAttribute("y", (gy+3).toFixed(1));
+      t.setAttribute("text-anchor","end"); t.setAttribute("class","axis-label");
+      t.textContent = val.toFixed(decimals) + (unit==="%"?"%":"");
+      svg.appendChild(t);
+    });
+
+    const step = Math.ceil(series.length / 6);
+    const lastIdx = series.length - 1;
+    series.forEach((r,i) => {
+      const isRegular = i % step === 0;
+      const isFinal = i === lastIdx;
+      if (!isRegular && !isFinal) return;
+      if (isRegular && !isFinal && (lastIdx - i) < step * 0.6) return;
+      const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+      t.setAttribute("x", x(i).toFixed(1)); t.setAttribute("y", H-6);
+      t.setAttribute("text-anchor", isFinal ? "end" : "middle"); t.setAttribute("class","axis-label");
+      t.textContent = fmtMonth(r.m).replace(" 20","'").replace("'0","'").split(" ").join("");
+      svg.appendChild(t);
+    });
+
+    (metric.annotations||[]).forEach(a => {
+      const idx = series.findIndex(r => r.m === a.m);
+      if (idx < 0) return;
+      const ax = x(idx);
+      const line = document.createElementNS("http://www.w3.org/2000/svg","line");
+      line.setAttribute("x1", ax.toFixed(1)); line.setAttribute("x2", ax.toFixed(1));
+      line.setAttribute("y1", MT); line.setAttribute("y2", MT+plotH);
+      line.setAttribute("class","annotation-line");
+      svg.appendChild(line);
+      const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+      t.setAttribute("x", ax.toFixed(1)); t.setAttribute("y", MT-4);
+      t.setAttribute("text-anchor", idx > series.length*0.7 ? "end" : "start");
+      t.setAttribute("class","annotation-label");
+      t.textContent = a.label;
+      svg.appendChild(t);
+    });
+
+    const linePts = series.map((r,i) => [x(i), r[key]!==null ? y(r[key]) : null]);
+    const validPts = linePts.filter(p => p[1] !== null);
+    if (validPts.length){
+      const areaPath = "M" + validPts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join("L")
+        + `L${validPts[validPts.length-1][0].toFixed(1)},${(MT+plotH).toFixed(1)}`
+        + `L${validPts[0][0].toFixed(1)},${(MT+plotH).toFixed(1)}Z`;
+      const area = document.createElementNS("http://www.w3.org/2000/svg","path");
+      area.setAttribute("d", areaPath);
+      area.setAttribute("fill", colorHex);
+      area.setAttribute("opacity", "0.12");
+      svg.appendChild(area);
+
+      const linePath = "M" + validPts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join("L");
+      const line = document.createElementNS("http://www.w3.org/2000/svg","path");
+      line.setAttribute("d", linePath);
+      line.setAttribute("fill","none"); line.setAttribute("stroke", colorHex);
+      line.setAttribute("stroke-width","2.5"); line.setAttribute("stroke-linejoin","round"); line.setAttribute("stroke-linecap","round");
+      svg.appendChild(line);
+    }
+
+    if (validPts.length){
+      const lastP = validPts[validPts.length-1];
+      const ring = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      ring.setAttribute("cx", lastP[0].toFixed(1)); ring.setAttribute("cy", lastP[1].toFixed(1));
+      ring.setAttribute("r","5.5"); ring.setAttribute("fill", colorHex);
+      ring.setAttribute("stroke","var(--surface-1)"); ring.setAttribute("stroke-width","2.5");
+      svg.appendChild(ring);
+      const lastVal = series[series.length-1][key];
+      const lt = document.createElementNS("http://www.w3.org/2000/svg","text");
+      lt.setAttribute("x", (lastP[0]-9).toFixed(1)); lt.setAttribute("y", (lastP[1]-9).toFixed(1));
+      lt.setAttribute("text-anchor","end"); lt.setAttribute("class","axis-label");
+      lt.setAttribute("style","fill:var(--text-primary); font-weight:700; font-size:11px;");
+      lt.textContent = (lastVal!==null&&lastVal!==undefined) ? lastVal.toFixed(decimals) + (unit==="%"?"%":"") : "";
+      svg.appendChild(lt);
+    }
+
+    series.forEach((r,i) => {
+      if (r[key]===null || r[key]===undefined) return;
+      const hit = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      hit.setAttribute("cx", x(i).toFixed(1)); hit.setAttribute("cy", y(r[key]).toFixed(1));
+      hit.setAttribute("r","9"); hit.setAttribute("fill","transparent");
+      hit.style.cursor = "pointer";
+      hit.addEventListener("mousemove", () => {
+        const rect = svg.getBoundingClientRect();
+        tooltip.style.left = (x(i)/W*rect.width + 14) + "px";
+        tooltip.style.top = (y(r[key])/H*rect.height - 8) + "px";
+        tooltip.style.opacity = "1";
+        tooltip.innerHTML = `<strong>${fmtMonth(r.m)}</strong><br/>${metric.label}: ${r[key].toFixed(decimals)}${unit==="%"?"%":""}`;
+      });
+      hit.addEventListener("mouseleave", () => tooltip.style.opacity = "0");
+      svg.appendChild(hit);
+    });
+
+    const tbl = document.getElementById(tableId);
+    if (tbl){
+      let rowsHtml = series.map(r => `<tr><td>${fmtMonth(r.m)}</td><td class="strong tabular">${
+        r[key]!==null&&r[key]!==undefined ? r[key].toFixed(decimals)+(unit==="%"?"%":"") : "–"}</td></tr>`).join("");
+      tbl.innerHTML = `<table class="data-table"><thead><tr><th>Month</th><th>${metric.label}</th></tr></thead><tbody>${rowsHtml}</tbody></table>`;
+    }
+  }
+
+  function renderTrendCard(cardKey){
+    const order = cardKey === "A" ? cardAOrder : cardBOrder;
+    const idx = cardKey === "A" ? cardAIdx : cardBIdx;
+    const metric = METRICS[order[idx]];
+    const series = currentSeries();
+    document.getElementById(`card${cardKey}_title`).textContent = metric.label + " trend";
+    document.getElementById(`card${cardKey}_note`).textContent = metric.note;
+    document.getElementById(`card${cardKey}_page`).textContent = `${idx+1}/${order.length}`;
+    renderLineChart(`card${cardKey}_chart`, `card${cardKey}_tooltip`, `card${cardKey}_hiddenTable`, series, metric);
+  }
+
+  // ---------------- Bar chart: productivity by department ----------------
+  function renderProdChart(svgId, tooltipId, tableId, dims){
+    const svg = document.getElementById(svgId);
+    const tooltip = document.getElementById(tooltipId);
+    const rows = [...DATA.scorecard].sort((a,b) => b.prod - a.prod);
+    const W = (dims&&dims.w)||520, barH=(dims&&dims.barH)||22, gap=(dims&&dims.gap)||12, ML=(dims&&dims.ml)||130, MR=46, MT=8, MB=8;
+    const plotW = W - ML - MR;
+    const H = MT + MB + rows.length * (barH + gap) - gap;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width","100%"); svg.setAttribute("height", H);
+    svg.innerHTML = "";
+
+    const maxV = Math.max(...rows.map(r=>r.prod)) * 1.12;
+    const selected = deptSel.value;
+
+    rows.forEach((r,i) => {
+      const yTop = MT + i*(barH+gap);
+      const bw = (r.prod/maxV) * plotW;
+      const dim = selected !== "__ALL__" && selected !== r.dept;
+
+      const label = document.createElementNS("http://www.w3.org/2000/svg","text");
+      label.setAttribute("x", ML-8); label.setAttribute("y", yTop+barH*0.65);
+      label.setAttribute("text-anchor","end"); label.setAttribute("class","axis-label");
+      label.setAttribute("style", `font-weight:600; fill:${dim ? 'var(--text-muted)' : 'var(--text-secondary)'}`);
+      label.textContent = r.dept;
+      svg.appendChild(label);
+
+      const track = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      track.setAttribute("x", ML); track.setAttribute("y", yTop);
+      track.setAttribute("width", plotW); track.setAttribute("height", barH);
+      track.setAttribute("rx", 6); track.setAttribute("fill","var(--surface-2)");
+      svg.appendChild(track);
+
+      const bar = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      bar.setAttribute("x", ML); bar.setAttribute("y", yTop);
+      bar.setAttribute("width", Math.max(bw-2,0)); bar.setAttribute("height", barH);
+      bar.setAttribute("rx", 6);
+      bar.setAttribute("fill", COLOR_HEX[r.dept]);
+      bar.setAttribute("opacity", dim ? "0.3" : "1");
+      bar.style.cursor = "pointer";
+      svg.appendChild(bar);
+
+      const val = document.createElementNS("http://www.w3.org/2000/svg","text");
+      val.setAttribute("x", ML + bw + 7); val.setAttribute("y", yTop+barH*0.65);
+      val.setAttribute("class","axis-label tabular");
+      val.setAttribute("style", "fill:var(--text-primary); font-weight:800; font-size:11.5px;");
+      val.textContent = r.prod.toFixed(1);
+      svg.appendChild(val);
+
+      [bar, track].forEach(el => {
+        el.addEventListener("mousemove", () => {
+          tooltip.style.left = (ML + bw*0.5) + "px";
+          tooltip.style.top = yTop + "px";
+          tooltip.style.opacity = "1";
+          tooltip.innerHTML = `<strong>${r.dept}</strong><br/>Productivity index: ${r.prod.toFixed(1)}<br/>Headcount: ${r.hc}`;
+        });
+        el.addEventListener("mouseleave", () => tooltip.style.opacity = "0");
+      });
+    });
+
+    const baseline = document.createElementNS("http://www.w3.org/2000/svg","line");
+    baseline.setAttribute("x1", ML); baseline.setAttribute("x2", ML);
+    baseline.setAttribute("y1", MT); baseline.setAttribute("y2", H-MB);
+    baseline.setAttribute("class","baseline");
+    svg.appendChild(baseline);
+
+    const tbl = document.getElementById(tableId);
+    if (tbl){
+      tbl.innerHTML = `<table class="data-table"><thead><tr><th>Department</th><th>Productivity index</th><th>Headcount</th></tr></thead><tbody>${
+        rows.map(r=>`<tr><td><span class="dept-swatch" style="background:${COLOR_HEX[r.dept]}"></span>${r.dept}</td><td class="strong tabular">${r.prod.toFixed(1)}</td><td class="tabular">${r.hc}</td></tr>`).join("")
+      }</tbody></table>`;
+    }
+  }
+
+  // ---------------- Stacked bar: separation reasons ----------------
+  function renderReasonChart(){
+    const svg = document.getElementById("reasonChart");
+    const tooltip = document.getElementById("reasonTooltip");
+    const legend = document.getElementById("reasonLegend");
+    const W = 420, H = 60, MT = 10;
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("width","100%"); svg.setAttribute("height", H);
+    svg.innerHTML = "";
+
+    let xCur = 0;
+    DATA.reasons.forEach((r,i) => {
+      const w = (r.pct/100) * (W-2*DATA.reasons.length);
+      const rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      rect.setAttribute("x", xCur); rect.setAttribute("y", MT);
+      rect.setAttribute("width", Math.max(w,0)); rect.setAttribute("height", 32);
+      rect.setAttribute("rx", 6); rect.setAttribute("fill", REASON_COLORS[i % REASON_COLORS.length]);
+      rect.style.cursor = "pointer";
+      rect.addEventListener("mousemove", () => {
+        tooltip.style.left = (xCur + w/2) + "px"; tooltip.style.top = MT + "px";
+        tooltip.style.opacity = "1";
+        tooltip.innerHTML = `<strong>${r.reason}</strong><br/>${r.count} separations (${r.pct}%)`;
+      });
+      rect.addEventListener("mouseleave", () => tooltip.style.opacity="0");
+      svg.appendChild(rect);
+      xCur += w + 2;
+    });
+
+    legend.innerHTML = DATA.reasons.map((r,i) => `
+      <div class="legend-item">
+        <span class="legend-swatch" style="background:${REASON_COLORS[i % REASON_COLORS.length]}"></span>
+        ${r.reason} &middot; ${r.pct}%
+      </div>`).join("");
+  }
+
+  // ---------------- Department scorecard table ----------------
+  function renderScoreTable(){
+    const body = document.getElementById("scoreTableBody");
+    const rows = [...DATA.scorecard].sort((a,b) => b.prod - a.prod);
+    const selected = deptSel.value;
+    body.innerHTML = rows.map(r => `
+      <tr class="${selected===r.dept?'hl':''}">
+        <td><span class="dept-swatch" style="background:${COLOR_HEX[r.dept]}"></span>${r.dept}</td>
+        <td class="tabular">${r.hc}</td>
+        <td class="tabular">${r.perf.toFixed(2)} / 5</td>
+        <td class="tabular">${r.eng.toFixed(2)} / 10</td>
+        <td class="tabular">${r.train.toFixed(1)}%</td>
+        <td class="strong tabular">${r.prod.toFixed(1)}</td>
+        <td class="tabular">${r.attr.toFixed(2)}%</td>
+      </tr>`).join("");
+  }
+
+  // ---------------- Expand modal ----------------
+  const modalOverlay = document.getElementById("modalOverlay");
+  const modalCard = document.getElementById("modalCard");
+  function openModal(title, note, buildFn){
+    modalCard.innerHTML = `
+      <div class="modal-head">
+        <div><div class="modal-title">${title}</div><div class="modal-note">${note}</div></div>
+        <button class="icon-btn" id="modalClose" aria-label="Close">${icon('close',14,2.2)}</button>
+      </div>
+      <div class="chart-wrap"><svg id="modalChart"></svg><div class="chart-tooltip" id="modalTooltip"></div></div>
+      <div id="modalTableWrap" style="margin-top:14px;"></div>
+    `;
+    document.getElementById("modalClose").addEventListener("click", closeModal);
+    buildFn();
+    modalOverlay.hidden = false;
+  }
+  function closeModal(){ modalOverlay.hidden = true; modalCard.innerHTML = ""; }
+  modalOverlay.addEventListener("click", (e) => { if (e.target === modalOverlay) closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !modalOverlay.hidden) closeModal(); });
+
+  function wireTrendCard(cardKey){
+    document.getElementById(`card${cardKey}_prev`).innerHTML = icon('chevronLeft',13,2.3);
+    document.getElementById(`card${cardKey}_next`).innerHTML = icon('chevronRight',13,2.3);
+    document.getElementById(`card${cardKey}_table`).innerHTML = icon('table',13,2);
+    document.getElementById(`card${cardKey}_expand`).innerHTML = icon('expand',13,2.1);
+
+    document.getElementById(`card${cardKey}_prev`).addEventListener("click", () => {
+      const order = cardKey === "A" ? cardAOrder : cardBOrder;
+      if (cardKey === "A") cardAIdx = (cardAIdx - 1 + order.length) % order.length;
+      else cardBIdx = (cardBIdx - 1 + order.length) % order.length;
+      renderTrendCard(cardKey);
+    });
+    document.getElementById(`card${cardKey}_next`).addEventListener("click", () => {
+      const order = cardKey === "A" ? cardAOrder : cardBOrder;
+      if (cardKey === "A") cardAIdx = (cardAIdx + 1) % order.length;
+      else cardBIdx = (cardBIdx + 1) % order.length;
+      renderTrendCard(cardKey);
+    });
+    document.getElementById(`card${cardKey}_table`).addEventListener("click", (e) => {
+      const t = document.getElementById(`card${cardKey}_hiddenTable`);
+      t.classList.toggle("show");
+      e.currentTarget.classList.toggle("active");
+    });
+    document.getElementById(`card${cardKey}_expand`).addEventListener("click", () => {
+      const order = cardKey === "A" ? cardAOrder : cardBOrder;
+      const idx = cardKey === "A" ? cardAIdx : cardBIdx;
+      const metric = METRICS[order[idx]];
+      openModal(metric.label + " trend", metric.note, () => {
+        renderLineChart("modalChart", "modalTooltip", null, currentSeries(), metric, {w:680, h:300});
+        const tblId = `card${cardKey}_hiddenTable`;
+        document.getElementById("modalTableWrap").innerHTML = document.getElementById(tblId).innerHTML || "";
+      });
+    });
+  }
+
+  function renderAll(){
+    renderTiles();
+    renderTrendCard("A");
+    renderTrendCard("B");
+    renderProdChart("prodChart","prodTooltip","prodTable");
+    renderReasonChart();
+    renderScoreTable();
+    const dep = deptSel.value === "__ALL__" ? "all departments" : deptSel.value;
+    document.getElementById("periodSub").textContent =
+      `Showing ${dep}, last ${rangeSel.value} months of ${DATA.company.length} · refreshed automatically on the 1st of each month`;
+  }
+
+  // wire rail icons
+  document.querySelectorAll('.rail-btn').forEach(btn => {
+    const target = btn.dataset.scroll;
+    btn.innerHTML = icon(target === "top" ? "overview" : (target === "trends" ? "trends" : target === "departments" ? "depts" : "scorecard"), 18, 1.9);
+    btn.addEventListener("click", () => {
+      document.querySelectorAll('.rail-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (target === "top") window.scrollTo({top:0, behavior:"smooth"});
+      else document.getElementById(target).scrollIntoView({behavior:"smooth", block:"start"});
+    });
+  });
+  document.querySelector('.rail-btn').classList.add('active');
+
+  // wire prod/table icon buttons
+  document.getElementById("prod_table").innerHTML = icon('table',13,2);
+  document.getElementById("prod_expand").innerHTML = icon('expand',13,2.1);
+  document.getElementById("prod_table").addEventListener("click", (e) => {
+    document.getElementById("prodTable").classList.toggle("show");
+    e.currentTarget.classList.toggle("active");
+  });
+  document.getElementById("prod_expand").addEventListener("click", () => {
+    openModal("Avg productivity index by department", "Latest month · index, company baseline = 100", () => {
+      renderProdChart("modalChart","modalTooltip",null,{w:680, barH:26, gap:14, ml:150});
+      document.getElementById("modalTableWrap").innerHTML = document.getElementById("prodTable").innerHTML || "";
+    });
+  });
+
+  wireTrendCard("A");
+  wireTrendCard("B");
+
+  deptSel.addEventListener("change", renderAll);
+  rangeSel.addEventListener("change", renderAll);
+
+  renderAll();
+})();
+</script>
