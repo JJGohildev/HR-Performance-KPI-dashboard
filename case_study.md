@@ -1,37 +1,74 @@
-# Performance KPI Dashboard & Reporting Automation
+# HR Performance and Reporting Automation: Case Study
 
-**Tools:** SQL &middot; Excel (Power Query, VBA) &middot; Power BI-style interactive reporting
-**Role:** Data Analyst (solo project)
-**Timeline:** Data covers Jan 2024 &ndash; Aug 2026, modeled on a monthly HR reporting cycle
+I built this project to explore workforce metrics in Power BI and make the steps behind recurring reporting easier to follow. It combines data preparation, KPI calculations, report design, and an Excel automation routine.
 
-### The problem
+**Tools:** Power BI, DAX, SQL, Excel, Power Query, and VBA  
+**Project type:** Personal analytics project  
+**Data period:** January 2024 to August 2026
 
-Meridian Retail Group's People team was tracking headcount, attrition, engagement, and training completion in a patchwork of monthly spreadsheets. Each report took the better part of a day to assemble by hand, numbers from different departments didn't always agree, and by the time leadership saw the trends, the month they described was already over. There was no single source of truth for "how is the workforce actually doing," and no easy way to tell whether a change in the numbers was noise or a real shift.
+Meridian Retail Group is fictional. The employee records and business scenarios are simulated, so this case study describes portfolio work rather than an engagement with a real HR team.
 
-### Approach
+## Questions I focused on
 
-I rebuilt the reporting workflow from the raw data up:
+- How does workforce size change alongside hiring and exits?
+- When do attrition and absenteeism increase?
+- How do engagement and training completion change over time?
+- Which reporting steps can be made repeatable with Excel VBA?
 
-**Data cleaning (SQL + Power Query).** Monthly HRIS exports arrive messy &mdash; inconsistent department names, missing training hours, duplicate rows. I documented a repeatable Power Query cleaning pass (trim/normalize text, enforce data types, remove duplicates, fill gaps from department-month medians) and validated the result with a set of SQL data-quality checks, so a bad export fails loudly instead of quietly skewing the KPIs.
+These questions helped me decide which measures and visuals belonged in the report.
 
-**KPI modeling (SQL).** With clean data landing in an employee-month fact table, a set of SQL queries computes the actual metrics: headcount and attrition trend, attrition variance by department and month, training completion rate, absenteeism by location, and a department scorecard ranked by productivity. These queries are the layer between "raw rows" and "numbers a report can show."
+## Preparing the data
 
-**Reporting automation (Excel VBA).** The monthly refresh &mdash; pulling the latest data, updating every pivot table, re-exporting to PDF, and emailing the distribution list &mdash; was a five-step manual routine that ate about 50 minutes a month. I wrote a macro (`RunMonthlyReport`) that does all four steps in one click, cutting the in-Excel portion of report prep from roughly 50 minutes to 5.
+The project includes employee records, departments, a monthly date table, employee-month observations, and summary KPI tables. Keeping their different levels of detail clear is important: an employee count and an average of monthly rates answer different questions.
 
-**Dashboard.** The KPIs feed an interactive report modeled on a Power BI layout: headline KPI tiles with trend sparklines, an attrition-rate trend line, an engagement-score trend line, a department productivity comparison, a separations breakdown, and a full department scorecard &mdash; with working department and date-range filters so a manager can drill into their own team.
+The SQL and Excel files document preparation steps for inconsistent department names, missing values, and duplicate records. The SQL queries also include data-quality checks. These should be rerun after source changes rather than assumed to pass on every refresh.
 
-### What the data showed
+I kept the CSV files supplied with the Power BI report in a separate folder so the report can be refreshed or rebuilt without confusing them with the original dataset archive.
 
-Two stories fell out of the KPIs once they were trustworthy and visible:
+## Building the report
 
-A restructuring in Q3 2024 pushed monthly attrition from a baseline of ~2% to over 4%, concentrated in a two-month window &mdash; visible immediately as a spike on the trend line rather than buried in a table.
+The native Power BI file has four pages: Overview, Workforce Trends, Department Scorecard, and Attrition & Exits.
 
-An engagement program launched in February 2025 shows up as a clean step change: average engagement score jumped from 6.95 to 7.53 practically overnight and held there, training completion rose from under 40% to the low-80s%, and productivity index ticked up alongside it. Being able to see the before/after this clearly is what turns "we ran a program" into "the program worked, and here's the data to defend the budget."
+### Overview
 
-### Outcome
+The first page brings together headcount, attrition, engagement, training completion, and productivity. Two trend charts add context to the summary cards.
 
-- Monthly report prep time cut by roughly 25% once the unavoidable manual data export is included in the baseline, freeing up the better part of a day each month for actual analysis instead of report assembly.
-- A single, validated source of truth for headcount, attrition, engagement, training, and productivity, refreshed with one click.
-- A department-level scorecard that surfaces where attrition and productivity are diverging, instead of waiting for a quarterly review to notice.
+![Power BI Overview page with all departments selected](screenshots/HR_Overview.png)
 
-*Note: Meridian Retail Group is a fictional company and this dataset is synthetically generated to demonstrate the workflow above &mdash; the pipeline, queries, and automation are built exactly as they would be against a real HRIS export.*
+The screenshot preserves the report's saved settings with all departments selected. Each card follows its measure's aggregation and date logic. A current headcount card should not be treated as having the same time basis as a measure averaged over several months.
+
+### Workforce Trends
+
+This page compares hiring and terminations with attrition, shows absenteeism over time, and breaks down training completion by department. I used separate chart areas so the reader can follow each metric without switching report pages.
+
+![Power BI Workforce Trends page with all departments selected](screenshots/HR_Workforce_Trends.png)
+
+The other pages provide department comparisons and a closer look at exits. The [Power BI report](powerbi/pbix/Meridian_HR_KPI.pbix) contains the full set of views.
+
+## What the trends show
+
+In the simulated data, attrition rises above 4% around the third quarter of 2024 before falling again. Engagement moves from roughly 7.0 to around 7.5 in early 2025. Training completion also shifts upward across departments during that period.
+
+These patterns correspond to scenarios designed into the dataset. They provide useful examples for comparing periods and departments, but they do not prove that an engagement program caused a business improvement.
+
+Absenteeism has several distinct peaks. Before recommending an action in a real setting, I would investigate the departments involved, the reporting definitions, and possible seasonal effects. A visible peak is a starting point for investigation, not an explanation on its own.
+
+## Reporting automation
+
+The repository includes a VBA procedure called RunMonthlyReport. It is designed to refresh workbook data and pivots, update the report date, and export the summary as a PDF. An optional step uses Outlook to email the file when enabled in the workbook configuration.
+
+This routine demonstrates how recurring steps can be grouped into a repeatable process. It does not refresh the Power BI report or replace the initial source-data export. The workbook configuration and local environment still need to be checked before running it.
+
+I have not included the earlier 25% time-saving claim. The supporting estimates were inconsistent, and a defensible result would require a timed comparison of the same manual and automated tasks.
+
+## What this project demonstrates
+
+The project brings together a native Power BI report, source tables, SQL calculations, and an Excel reporting workflow. It shows how I organize an analysis around clear questions and keep the report connected to its underlying data and definitions.
+
+A separate [browser dashboard](https://jjgohildev.github.io/HR-Performance-KPI-dashboard/) is also available. Its presentation and filter behavior can differ from Power BI. The screenshots in this case study come directly from the native report.
+
+## Next improvements
+
+I would clarify the reporting period on each KPI card, replace automatically generated chart subtitles with shorter labels, and record a measure-by-measure comparison with SQL under matching filters. For automation, I would test refresh failures and capture a repeatable timing baseline before reporting an efficiency gain.
+
+[Back to the project overview](README.md)
