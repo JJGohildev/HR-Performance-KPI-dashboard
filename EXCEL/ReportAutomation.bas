@@ -13,18 +13,8 @@ Attribute VB_Name = "Module_ReportAutomation"
 '     5. Optionally attach + email the PDF to the distribution list on the
 '        Config sheet via Outlook
 '
-' Manual process this replaces (baseline, ~55 min/month):
-'   - Export raw data from HRIS (5 min)
-'   - Manually clean department names, blanks, duplicates in Excel (15 min)
-'   - Refresh & reformat 6 pivot tables one by one (15 min)
-'   - Re-check chart axis ranges / titles (10 min)
-'   - Save as PDF, rename, email to stakeholders (10 min)
-'
-' Automated process (~40 min/month, mostly the initial HRIS export which
-' cannot be automated from Excel alone): running RunMonthlyReport reduces
-' the in-Excel portion from ~50 min to ~5 min, which is where the reported
-' "~25% reduction in overall monthly report preparation effort" comes from
-' once the unavoidable manual export step is included in the baseline.
+' Timing: No reproducible benchmark is included. Measure the complete
+' manual and automated workflows before claiming a time-saving percentage.
 '==============================================================================
 
 Option Explicit
