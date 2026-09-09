@@ -6,7 +6,7 @@ I built this project to explore workforce metrics in Power BI and make the steps
 **Project type:** Personal analytics project  
 **Data period:** January 2024 to August 2026
 
-Meridian Retail Group is fictional. The employee records and business scenarios are simulated, so this case study describes portfolio work rather than an engagement with a real HR team.
+This personal project uses simulated employee records for Meridian Retail Group, a fictional company.
 
 ## Questions I focused on
 
@@ -15,15 +15,11 @@ Meridian Retail Group is fictional. The employee records and business scenarios 
 - How do engagement and training completion change over time?
 - Which reporting steps can be made repeatable with Excel VBA?
 
-These questions helped me decide which measures and visuals belonged in the report.
-
 ## Preparing the data
 
 The project includes employee records, departments, a monthly date table, employee-month observations, and summary KPI tables. Keeping their different levels of detail clear is important: an employee count and an average of monthly rates answer different questions.
 
 The SQL and Excel files document preparation steps for inconsistent department names, missing values, and duplicate records. The SQL queries also include data-quality checks. These should be rerun after source changes rather than assumed to pass on every refresh.
-
-I kept the CSV files supplied with the Power BI report in a separate folder so the report can be refreshed or rebuilt without confusing them with the original dataset archive.
 
 ## Building the report
 
@@ -43,7 +39,7 @@ This page compares hiring and terminations with attrition, shows absenteeism ove
 
 ![Power BI Workforce Trends page with all departments selected](screenshots/HR_Workforce_Trends.png)
 
-The other pages provide department comparisons and a closer look at exits. The [Power BI report](powerbi/pbix/Meridian_HR_KPI.pbix) contains the full set of views.
+The other pages provide department comparisons and a closer look at exits. The [Power BI report](pbix/Meridian_HR_KPI.pbix) contains the full set of views.
 
 ## What the trends show
 
@@ -58,14 +54,6 @@ Absenteeism has several distinct peaks. Before recommending an action in a real 
 The repository includes a VBA procedure called RunMonthlyReport. It is designed to refresh workbook data and pivots, update the report date, and export the summary as a PDF. An optional step uses Outlook to email the file when enabled in the workbook configuration.
 
 This routine demonstrates how recurring steps can be grouped into a repeatable process. It does not refresh the Power BI report or replace the initial source-data export. The workbook configuration and local environment still need to be checked before running it.
-
-The supporting estimates were inconsistent, and a defensible result would require a timed comparison of the same manual and automated tasks.
-
-## What this project demonstrates
-
-The project brings together a native Power BI report, source tables, SQL calculations, and an Excel reporting workflow. It shows how I organize an analysis around clear questions and keep the report connected to its underlying data and definitions.
-
-A separate [browser dashboard](https://jjgohildev.github.io/HR-Performance-KPI-dashboard/) is also available. Its presentation and filter behavior can differ from Power BI. The screenshots in this case study come directly from the native report.
 
 ## Next improvements
 
