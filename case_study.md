@@ -35,7 +35,7 @@ The first page brings together headcount, attrition, engagement, training comple
 
 ![Power BI Overview page with all departments selected](screenshots/HR_Overview.png)
 
-The screenshot preserves the report's saved settings with all departments selected. Each card follows its measure's aggregation and date logic. A current headcount card should not be treated as having the same time basis as a measure averaged over several months.
+The overview combines workforce KPIs with monthly trends. Some cards use different reporting periods, so I would make those periods explicit before using the report for recurring HR reviews.
 
 ### Workforce Trends
 
@@ -59,7 +59,7 @@ The repository includes a VBA procedure called RunMonthlyReport. It is designed 
 
 This routine demonstrates how recurring steps can be grouped into a repeatable process. It does not refresh the Power BI report or replace the initial source-data export. The workbook configuration and local environment still need to be checked before running it.
 
-I have not included the earlier 25% time-saving claim. The supporting estimates were inconsistent, and a defensible result would require a timed comparison of the same manual and automated tasks.
+The supporting estimates were inconsistent, and a defensible result would require a timed comparison of the same manual and automated tasks.
 
 ## What this project demonstrates
 
