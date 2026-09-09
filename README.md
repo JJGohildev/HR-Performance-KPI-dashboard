@@ -4,7 +4,7 @@ I built this project to explore workforce performance in Power BI and document a
 
 The report covers headcount, attrition, engagement, training, productivity, and absenteeism. Meridian Retail Group is a fictional company, and the project uses simulated workforce data from January 2024 to August 2026.
 
-**[Download the Power BI report](pbix/Meridian_HR_KPI.pbix)** · **[Read the case study](case_study.md)** · **[Open the browser dashboard](https://jjgohildev.github.io/HR-Performance-KPI-dashboard/)**
+**[Download Power BI report](pbix/Meridian_HR_KPI.pbix) · [Read case study](case_study.md) · [View SQL](sql/hr_kpi_queries.sql)**
 
 ## Power BI report previews
 
@@ -40,7 +40,6 @@ Hiring, terminations, attrition, absenteeism, and training completion in one vie
 | [Excel workbook](EXCEL/HR_Performance_KPI_Workbook.xlsx) | Data preparation and reporting workbook |
 | [VBA module](EXCEL/ReportAutomation.bas) | Refresh, PDF export, and optional email routine |
 | [Original dataset](DATA/) | Dataset files from the original project |
-| [Browser dashboard](index.html) | Separate HTML, CSS, and JavaScript implementation |
 
 ## Open the report
 
@@ -48,7 +47,7 @@ Use the tabs to explore Overview, Workforce Trends, Department Scorecard, and At
 
 To refresh the report on another computer, download the CSV files from powerbi/data and update any local source paths in Power Query. Review the active filters and measure definitions before comparing Power BI values with SQL or the browser dashboard.
 
-The browser dashboard is a separate implementation, not an embedded Power BI report.
+Review the active filters and measure definitions before comparing Power BI values with SQL.
 
 ## Reporting automation
 
