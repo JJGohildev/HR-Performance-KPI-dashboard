@@ -52,9 +52,7 @@ The browser dashboard is a separate implementation, not an embedded Power BI rep
 
 ## Reporting automation
 
-The VBA module is designed to refresh workbook connections and pivot tables, update report metadata, and export the summary to PDF. It also includes optional Outlook email functionality controlled by workbook configuration. It requires the expected workbook sheets, named ranges, and a compatible Excel environment.
-
-No measured time-saving percentage is claimed here. The earlier estimates were inconsistent and are not supported by a reproducible timing log.
+The Excel VBA routine is designed to refresh workbook connections and pivot tables, update the report date, and export a PDF summary. It requires the supplied workbook configuration and a compatible Excel environment. Power BI refresh is handled separately.
 
 ## Scope
 
