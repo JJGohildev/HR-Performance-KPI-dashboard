@@ -4,7 +4,7 @@ I built this project to explore workforce performance in Power BI and document a
 
 The report covers headcount, attrition, engagement, training, productivity, and absenteeism. Meridian Retail Group is a fictional company, and the project uses simulated workforce data from January 2024 to August 2026.
 
-**[Download Power BI report](pbix/Meridian_HR_KPI.pbix) · [Read case study](case_study.md) · [View SQL](sql/hr_kpi_queries.sql)**
+[Download Power BI report](pbix/Meridian_HR_KPI.pbix) · [Read case study](case_study.md) · [View SQL](sql/hr_kpi_queries.sql)
 
 ## Power BI report previews
 
@@ -43,9 +43,7 @@ Hiring, terminations, attrition, absenteeism, and training completion in one vie
 
 ## Open the report
 
-Use the tabs to explore Overview, Workforce Trends, Department Scorecard, and Attrition & Exits.
-
-To refresh the report on another computer, download the CSV files from powerbi/data and update any local source paths in Power Query. Review the active filters and measure definitions before comparing Power BI values with SQL or the browser dashboard.
+Download the PBIX file and open it in Power BI Desktop. Use the tabs to explore Overview, Workforce Trends, Department Scorecard, and Attrition & Exits.
 
 Review the active filters and measure definitions before comparing Power BI values with SQL.
 
