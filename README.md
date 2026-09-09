@@ -4,7 +4,7 @@ I built this project to explore workforce performance in Power BI and document a
 
 The report covers headcount, attrition, engagement, training, productivity, and absenteeism. Meridian Retail Group is a fictional company, and the project uses simulated workforce data from January 2024 to August 2026.
 
-**[Download the Power BI report](powerbi/pbix/Meridian_HR_KPI.pbix)** · **[Read the case study](case_study.md)** · **[Open the browser dashboard](https://jjgohildev.github.io/HR-Performance-KPI-dashboard/)**
+**[Download the Power BI report](pbix/Meridian_HR_KPI.pbix)** · **[Read the case study](case_study.md)** · **[Open the browser dashboard](https://jjgohildev.github.io/HR-Performance-KPI-dashboard/)**
 
 ## Power BI report previews
 
@@ -34,11 +34,8 @@ Hiring, terminations, attrition, absenteeism, and training completion in one vie
 
 | Resource | Contents |
 | --- | --- |
-| [Power BI report](powerbi/pbix/Meridian_HR_KPI.pbix) | Native Power BI Desktop report |
+| [Power BI report](pbix/Meridian_HR_KPI.pbix) | Native Power BI Desktop report |
 | [Case study](case_study.md) | Project approach, observations, and limitations |
-| [Power BI guide](powerbi/BUILD_PLAN.md) | Report structure and reconstruction notes |
-| [DAX reference](powerbi/DAX_measures_library.md) | Measure examples and definitions |
-| [Power BI source tables](powerbi/data/) | CSV files supplied with the native report |
 | [SQL queries](sql/hr_kpi_queries.sql) | KPI calculations and data-quality checks |
 | [Excel workbook](EXCEL/HR_Performance_KPI_Workbook.xlsx) | Data preparation and reporting workbook |
 | [VBA module](EXCEL/ReportAutomation.bas) | Refresh, PDF export, and optional email routine |
@@ -47,7 +44,7 @@ Hiring, terminations, attrition, absenteeism, and training completion in one vie
 
 ## Open the report
 
-Download the PBIX file and open it in Power BI Desktop. Use the tabs to explore Overview, Workforce Trends, Department Scorecard, and Attrition & Exits.
+Use the tabs to explore Overview, Workforce Trends, Department Scorecard, and Attrition & Exits.
 
 To refresh the report on another computer, download the CSV files from powerbi/data and update any local source paths in Power Query. Review the active filters and measure definitions before comparing Power BI values with SQL or the browser dashboard.
 
